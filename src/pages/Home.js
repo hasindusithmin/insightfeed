@@ -4,6 +4,7 @@ import { NodeAPI } from "../lib/config"
 import moment from "moment"
 import Overview from "../charts/Overview";
 import Loader from "../components/Loaders";
+import Tree from "../charts/Tree";
 
 export default function Home() {
 
@@ -21,7 +22,7 @@ export default function Home() {
             data: {
                 database: "InsightFeed",
                 collection: "news",
-                filter: { "timestamp": { "$gte": fromDate, "$lte": toDate } },
+                filter: { "timestamp": { "$gte": fromDate, "$lte": toDate }, "analyzed": true, "sentiment": { "$ne": null } },
                 sort: { "timestamp": -1 },
                 group: "category"
             }
@@ -37,8 +38,19 @@ export default function Home() {
     }, [])
 
     return (
-        <div className="w3-content chart-container">
-            {news ? <Overview news={news} fromDate={fromDate} toDate={toDate} /> : <Loader/>}
+        <div className="w3-content">
+            {news ? (
+                <>
+                    <div className="chart-container">
+                        <Overview news={news} fromDate={fromDate} toDate={toDate} />
+                    </div>
+
+                    <div className="chart-container">
+                        <Tree news={news} fromDate={fromDate} toDate={toDate} />
+                    </div>
+
+                </>
+            ) : <Loader />}
         </div>
     )
 }

@@ -1998,3 +1998,7 @@ a {
   justify-content: center;
   align-items: center;
 }
+
+.underline-text {
+  text-decoration: underline;
+}
