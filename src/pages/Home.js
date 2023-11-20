@@ -130,7 +130,7 @@ export default function Home() {
                         setNews(res.data);
                     })
                     .catch(err => {
-                        console.log(err);
+                        Swal.showValidationMessage(err)
                     })
             }
         });

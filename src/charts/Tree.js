@@ -1,6 +1,8 @@
 import ReactEcharts from "echarts-for-react"
 import Swal from "sweetalert2";
 import moment from "moment";
+import { NewsAPI } from "../lib/config";
+import axios from "axios";
 
 export default function Tree({ news, fromDate, toDate }) {
     const children = [];
@@ -105,8 +107,8 @@ export default function Tree({ news, fromDate, toDate }) {
 
     const option = {
         title: {
-            text: 'InsightFeed: Info Grove',
-            subtext: `From ${moment(fromDate).format('MMMM Do YYYY, h:mm A')} To ${moment(toDate).format('MMMM Do YYYY, h:mm A')}`,
+            text: 'Info Grove',
+            subtext: `From ${moment(fromDate).format('MMM Do YYYY, h:mm A')} To ${moment(toDate).format('MMM Do YYYY, h:mm A')}`,
             left: 'left'
         },
         tooltip: {
@@ -171,40 +173,107 @@ export default function Tree({ news, fromDate, toDate }) {
     }
 
     const onEvents = {
-        click: ({ name, data }) => {
+        click: ({ data }) => {
             if (data.hasOwnProperty("news")) {
                 const { title, named_entities, topic_modeling, description, timestamp } = data['news']
                 const entities = typeof named_entities === 'object' ? named_entities : [named_entities]
                 const topics = typeof topic_modeling === 'object' ? topic_modeling : [topic_modeling]
-                Swal.fire({
-                    title: title,
-                    customClass: {
-                        title: "w3-large w3-text-blue-grey"
-                    },
-                    html: `
-                      <div class="w3-justify">
-                        ${description ? `<span class="w3-hover-text-blue-grey">${description}</span>` : "<span class=\"w3-text-red\">Sorry, there's no information available about this news at the moment.</span>"}
-                      </div>
-                      <br>
-                      <div class="w3-padding">
-                        ${data["method"] === "NER" ? entities.map(entity => "<span title=\"entity\" style=\"margin:5px;\" class=\"w3-tag w3-padding-small w3-green w3-round-large w3-hover-text-dark-grey\">" + "<i class=\"fa fa-cube\" aria-hidden=\"true\"></i>&nbsp;" + entity + "</span>").join("") : ""}
-                        ${data["method"] === "TM" ? topics.map(topic => "<span title=\"topic\" style=\"margin:5px;\" class=\"w3-tag w3-padding-small w3-blue w3-round-large w3-hover-text-dark-grey\">" + "<i class=\"fa fa-tags\" aria-hidden=\"true\"></i>&nbsp;" + topic + "</span>").join("") : ""}
-                      </div>
-                      <div class="w3-padding w3-right">
-                        <span class="w3-hover-text-blue-grey"><i class="fa fa-clock-o" aria-hidden="true"></i> ${moment(timestamp).format('MMMM Do YYYY, h:mm A')}<span>
-                      </div>
-                    `,
-                    showCloseButton: true,
-                    showCancelButton: false,
-                    showConfirmButton: false,
-                    confirmButtonText: `
-                      <i class="fa fa-thumbs-up"></i> Great!
-                    `,
-                    confirmButtonAriaLabel: "Thumbs up, great!",
-                    cancelButtonText: `
-                      <i class="fa fa-thumbs-down"></i>
-                    `,
-                });
+                const openModal = () => {
+                    Swal.fire({
+                        title: title,
+                        customClass: {
+                            title: "w3-large w3-text-blue-grey",
+                            confirmButton: "w3-button w3-round-xlarge w3-blue-grey"
+                        },
+                        html: `
+                          <div class="w3-justify">
+                            ${description ? `<span class="w3-hover-text-blue-grey">${description}</span>` : "<span class=\"w3-text-red\">Sorry, there's no information available about this news at the moment.</span>"}
+                          </div>
+                          <br>
+                          <div class="w3-padding">
+                            ${data["method"] === "NER" ? entities.map(entity => "<span title=\"entity\" style=\"margin:5px;\" class=\"w3-tag w3-padding-small w3-green w3-round-large w3-hover-text-dark-grey\">" + "<i class=\"fa fa-cube\" aria-hidden=\"true\"></i>&nbsp;" + entity + "</span>").join("") : ""}
+                            ${data["method"] === "TM" ? topics.map(topic => "<span title=\"topic\" style=\"margin:5px;\" class=\"w3-tag w3-padding-small w3-blue w3-round-large w3-hover-text-dark-grey\">" + "<i class=\"fa fa-tags\" aria-hidden=\"true\"></i>&nbsp;" + topic + "</span>").join("") : ""}
+                          </div>
+                          <div class="w3-padding w3-left">
+                            <span class="w3-hover-text-blue-grey"><i class="fa fa-clock-o" aria-hidden="true"></i> ${moment(timestamp).format('MMM Do YYYY, h:mm A')}<span>
+                          </div>
+                        `,
+                        showCloseButton: true,
+                        showCancelButton: false,
+                        showConfirmButton: true,
+                        showLoaderOnConfirm: true,
+                        confirmButtonText: "<i class=\"fa fa-newspaper-o\" aria-hidden=\"true\"></i> More",
+                        preConfirm: () => {
+                            const options = {
+                                url: NewsAPI + "/hotnews/v2",
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                data: {
+                                    "query": title,
+                                    "language": "en-US",
+                                    "country": "US",
+                                    "ceid": "US:en"
+                                }
+                            };
+                            return axios(options)
+                                .then(res => {
+                                    const data = res.data || []
+                                    Swal.fire({
+                                        title: title,
+                                        customClass: {
+                                            title: "w3-large w3-text-dark-grey",
+                                            htmlContainer: "w3-container scrollable-container",
+                                            confirmButton: "w3-button w3-round-xlarge w3-blue-grey"
+                                        },
+                                        html: `
+                                            ${data.length > 0 && data.map(news =>
+                                            `
+                                                <div class="w3-card w3-round-xlarge w3-panel w3-padding" style="margin:10px 5px;">
+                                                    <span
+                                                        title="click here to view news"
+                                                        class="w3-text-grey w3-hover-text-dark-grey"
+                                                        style="text-decoration:none;font-weight:bold;cursor:pointer;"
+                                                        onclick="window.open('${news.link}', '_blank', 'width=600,height=400,location=no,menubar=no,toolbar=no')"
+                                                    >
+                                                        ${news.title}
+                                                    </span>
+                                                    <div class="w3-padding w3-left-align">
+                                                        <a
+                                                            href="${news.source['@url']}"
+                                                            class="w3-text-blue"
+                                                            style="text-decoration:none;font-weight:500px;"
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                        >
+                                                            <i class="fa fa-rss-square" aria-hidden="true"></i> ${news.source['#text']}
+                                                        </a>
+                                                        <br>
+                                                        <span>
+                                                            <i class="w3-spin fa fa-clock-o" aria-hidden="true"></i> ${moment(news.pubDate).format("MMM Do YYYY, h:mm A")}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                `
+                                        ).join("")}
+                                        `,
+                                        showCloseButton: true,
+                                        showCancelButton: false,
+                                        showConfirmButton: true,
+                                        confirmButtonText: "<i class='fa fa-chevron-circle-left' aria-hidden='true'></i> Back",
+                                        preConfirm: () => {
+                                            openModal()
+                                        }
+                                    })
+                                })
+                                .catch(err => {
+                                    Swal.showValidationMessage(err)
+                                })
+                        }
+                    });
+                }
+                openModal();
             }
         }
     }
