@@ -6,6 +6,8 @@ import Overview from "../charts/Overview";
 import Loader from "../components/Loaders";
 import Tree from "../charts/Tree";
 import Swal from "sweetalert2";
+import Vortex from "../components/Vortex";
+import { Typewriter } from 'react-simple-typewriter'
 
 export default function Home() {
 
@@ -39,10 +41,22 @@ export default function Home() {
     }, [])
 
     const showFilter = () => {
+        const Toast = Swal.mixin({
+            toast: true,
+            position: "top-end",
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            didOpen: (toast) => {
+                toast.onmouseenter = Swal.stopTimer;
+                toast.onmouseleave = Swal.resumeTimer;
+            }
+        });
         Swal.fire({
             customClass: {
                 htmlContainer: "w3-container",
-                confirmButton: "w3-green"
+                confirmButton: "w3-green",
+                denyButton: "w3-red"
             },
             position: "top-end",
             html: `
@@ -57,20 +71,41 @@ export default function Home() {
           `,
             showCloseButton: true,
             showCancelButton: false,
+            showDenyButton: true,
             confirmButtonText: "<i class='fa fa-filter'></i>",
+            denyButtonText: "<i class='fa fa-history'></i>",
             showLoaderOnConfirm: true,
-            preConfirm: () => {
-                const Toast = Swal.mixin({
-                    toast: true,
-                    position: "top-end",
-                    showConfirmButton: false,
-                    timer: 3000,
-                    timerProgressBar: true,
-                    didOpen: (toast) => {
-                        toast.onmouseenter = Swal.stopTimer;
-                        toast.onmouseleave = Swal.resumeTimer;
+            showLoaderOnDeny: true,
+            preDeny: () => {
+                const options = {
+                    url: NodeAPI + "/getSortedDocumentsWithGroupBy",
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    data: {
+                        database: "InsightFeed",
+                        collection: "news",
+                        filter: { "timestamp": { "$gte": moment().startOf("day").valueOf(), "$lte": moment().valueOf() }, "analyzed": true, "sentiment": { "$ne": null } },
+                        sort: { "timestamp": -1 },
+                        group: "category"
                     }
-                });
+                };
+                return axios(options)
+                    .then(res => {
+                        setFromDate(moment().startOf("day").valueOf())
+                        setToDate(moment().valueOf())
+                        setNews(res.data);
+                    })
+                    .catch(err => {
+                        console.log(err);
+                        Toast.fire({
+                            icon: "error",
+                            title: err.message
+                        });
+                    })
+            },
+            preConfirm: () => {
                 const expectedFormat = "YYYY-MMM-DD h:mm A"
                 const from_date = document.getElementById("from-date") ? document.getElementById("from-date").value : moment(fromDate).format('YYYY-MMM-DD h:mm A');
                 const to_date = document.getElementById("from-date") ? document.getElementById("to-date").value : moment(toDate).format('YYYY-MMM-DD h:mm A');
@@ -130,36 +165,58 @@ export default function Home() {
                         setNews(res.data);
                     })
                     .catch(err => {
-                        Swal.showValidationMessage(err)
+                        console.log(err);
+                        Toast.fire({
+                            icon: "error",
+                            title: err.message
+                        });
                     })
             }
         });
     }
+
+    const [showAnimate, setShowAnimate] = useState(false);
 
     return (
         <div className="w3-content w3-panel">
 
             <div className="w3-display-container">
                 <div className="w3-display-topright">
-                    <button className="w3-button w3-green w3-round-large" onClick={showFilter}>
+                    <button className="w3-button w3-green w3-round-large" onClick={showFilter} disabled={!news}>
                         <i className="fa fa-filter"></i>
                     </button>
                 </div>
+                <div className="w3-display-topleft">
+                    <span className="w3-tag w3-red">Beta</span>
+                </div>
             </div>
-            <div className="w3-center w3-xxlarge w3-padding-64">
-                Insight<span className="w3-tag">Feed</span>
+            <div className="w3-center w3-light-grey w3-round-xlarge w3-padding-64">
+                <div className="svg-container">
+                    <Vortex show={showAnimate} />
+                </div>
+                <div className="w3-xxlarge w3-wide">
+                    <span onMouseOver={() => setShowAnimate(true)} onMouseOut={() => setShowAnimate(false)}>
+                        <span className="w3-tag w3-blue">Insight</span><span className="w3-tag w3-blue-grey">Feed</span>
+                    </span>
+                </div>
+                <div className="w3-xlarge w3-padding">
+                    AI-driven news platform <i className="fa fa-check-circle-o" aria-hidden="true"></i>
+                </div>
+                <div className="w3-large">
+                    <Typewriter words={['Sentiment Analysis: Gauge news emotions: positive or negative', 'Name Entity Recognition: Identify key names and places in news content', 'Topic Modeling: Uncover trending news themes quickly', 'Classification: Organize news stories into relevant categories', 'Visualization: Present news insights visually for quick understanding']} loop={100} cursor cursorStyle='_' />
+                </div>
             </div>
             {news ? (
-                <>
-                    <div className="chart-container">
+                <div className="w3-margin-top">
+                    <div className="svg-container">
                         <Overview news={news} fromDate={fromDate} toDate={toDate} />
                     </div>
 
-                    <div className="chart-container">
+                    <div className="svg-container">
                         <Tree news={news} fromDate={fromDate} toDate={toDate} />
                     </div>
 
-                </>
+                </div>
             ) : <Loader />}
         </div>
     )

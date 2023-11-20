@@ -1993,24 +1993,10 @@ a {
   border-color: #e7ffff !important
 }
 
-.chart-container {
+.svg-container {
   display: flex;
   justify-content: center;
   align-items: center;
-}
-
-.top-button {
-  display: none;
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  padding: 10px 20px;
-  font-size: 16px;
-  background-color: #3498db;
-  color: #fff;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
 }
 
 .scrollable-container {

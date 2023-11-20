@@ -2,7 +2,7 @@ import { Hourglass } from "react-loader-spinner"
 
 export default function Loader() {
     return (
-        <div className="chart-container" style={{height: '100vh'}}>
+        <div className="svg-container" style={{height: '50vh'}}>
             <Hourglass
                 visible={true}
                 height="80"
