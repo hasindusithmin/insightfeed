@@ -107,7 +107,7 @@ export default function Tree({ news, fromDate, toDate }) {
 
     const option = {
         title: {
-            text: 'Info Grove',
+            text: 'Categorizing News',
             subtext: `From ${moment(fromDate).format('MMM Do YYYY, h:mm A')} To ${moment(toDate).format('MMM Do YYYY, h:mm A')}`,
             left: 'left'
         },

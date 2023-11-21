@@ -24,8 +24,8 @@ export default function Overview({ news, fromDate, toDate }) {
 
     const initOptions = {
         title: {
-            text: 'News Overview',
-            subtext: `From ${moment(fromDate).format('MMMM Do YYYY, h:mm A')} To ${moment(toDate).format('MMMM Do YYYY, h:mm A')}`,
+            text: 'Types of News',
+            subtext: `From ${moment(fromDate).format('MMM Do YYYY, h:mm A')} To ${moment(toDate).format('MMM Do YYYY, h:mm A')}`,
             left: 'left'
         },
         grid: {
@@ -104,7 +104,7 @@ export default function Overview({ news, fromDate, toDate }) {
                 const results = groupBySentiment(filteredNews[0])
                 const opts = {
                     title: {
-                        text: "Sentiment of " + name + " news",
+                        text: "Sentiments of " + name,
                         subtext: `From ${moment(fromDate).format('MMMM Do YYYY, h:mm A')} To ${moment(toDate).format('MMMM Do YYYY, h:mm A')}`,
                         left: 'left'
                     },

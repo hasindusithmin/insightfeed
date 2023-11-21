@@ -2016,3 +2016,18 @@ a {
 .scrollable-container::-webkit-scrollbar-thumb:hover {
   background-color: #555;
 }
+
+.swiper {
+  width: 500px;
+  height: 550px;
+}
+
+.swiper-slide {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 18px;
+  font-size: 22px;
+  font-weight: bold;
+  color: #fff;
+}
