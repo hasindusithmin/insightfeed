@@ -9,17 +9,192 @@ import Swal from "sweetalert2";
 import Vortex from "../components/Vortex";
 import { Typewriter } from 'react-simple-typewriter'
 import Slides from "../components/Slides";
+import { Tooltip } from "react-tooltip";
+import Sentiment from "../charts/Sentiment";
 
 export default function Home() {
+
+    function dataPreProcess(rawData) {
+        const processedData = []
+        for (const { _id, count, data } of rawData) {
+            const dataOfCategory = []
+            for (const dt of data) {
+                let { named_entities, topic_modeling } = dt;
+                dt['named_entities'] = typeof named_entities === "string" ? named_entities.includes(",") ? named_entities.split(",") : [named_entities] : named_entities;
+                dt['topic_modeling'] = typeof topic_modeling === "string" ? topic_modeling.includes(",") ? topic_modeling.split(",") : [topic_modeling] : topic_modeling;
+                dataOfCategory.push(dt);
+            }
+            processedData.push({ _id, count, data: dataOfCategory })
+        }
+        return processedData
+    }
+
+    const Toast = Swal.mixin({
+        toast: true,
+        position: "top-end",
+        showConfirmButton: false,
+        timer: 5000,
+        timerProgressBar: true,
+        didOpen: (toast) => {
+            toast.onmouseenter = Swal.stopTimer;
+            toast.onmouseleave = Swal.resumeTimer;
+        }
+    });
+
+    const [categorizeNewsLoading, setCategorizeNewsLoading] = useState(false);
+    const [sentimentsByCategoryLoading, setSentimentsByCategoryLoading] = useState(false);
 
     const [fromDate, setFromDate] = useState(moment().startOf("day").valueOf());
     const [toDate, setToDate] = useState(moment().valueOf());
     const [news, setNews] = useState(null);
     const [latestNews, setLatestNews] = useState(null);
+    const [analytics, setAnalytics] = useState({ total: 0, positive: 0, negative: 0 });
+    const [sentimentsByCategory, setSentimentsByCategory] = useState(null);
+
+
+
+
+    function getCategorizeNews(retry = 0, dateFrom, dateTo) {
+        if (retry >= 3) {
+            setCategorizeNewsLoading(false);
+            return
+        }
+        const options = {
+            url: NodeAPI + "/getSortedDocumentsWithGroupBy",
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            data: {
+                task: "getCategorizeNews",
+                database: "InsightFeed",
+                collection: "news",
+                filter: {
+                    "timestamp": { "$gte": dateFrom, "$lte": dateTo },
+                    "analyzed": true,
+                    "sentiment": { "$ne": null }
+                },
+                sort: { "timestamp": -1 },
+                group: "category"
+            }
+        };
+        axios(options)
+            .then(res => {
+                setNews(dataPreProcess(res.data));
+                setCategorizeNewsLoading(false);
+
+            })
+            .catch(err => {
+                console.log(err);
+                retry++;
+                getCategorizeNews(retry, dateFrom, dateTo);
+            })
+    }
+
+    function getSentimentsByCategory(retry = 0, dateFrom, dateTo) {
+        if (retry >= 3) {
+            return
+        }
+        const options = {
+            url: NodeAPI + "/getSentimentCountsByCategory",
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            data: {
+                filter: {
+                    "timestamp": { "$gte": dateFrom, "$lte": dateTo },
+                    "analyzed": true,
+                    "sentiment": { "$ne": null }
+                }
+            }
+        };
+        axios(options)
+            .then(res => {
+                const array = []
+                for (const { _id, sentiments } of res.data) {
+                    const object = {
+                        category: _id,
+                        positive: 0,
+                        negative: 0,
+                    };
+                    for (const { sentiment, count } of sentiments) {
+                        const kname = sentiment.toLowerCase()
+                        object[kname] = count;
+                    }
+                    array.push(object);
+                }
+                const arr = array.map(data => ({ category: data['category'], positive: data['positive'], negative: data['negative'], total: data['positive'] + data['negative'] }))
+                arr.sort((a, b) => a.total - b.total)
+                setSentimentsByCategoryLoading(false);
+                setSentimentsByCategory(arr);
+                setCategorizeNewsLoading(true)
+                getCategorizeNews(0, dateFrom, dateTo);
+            })
+            .catch(err => {
+                console.log(err);
+                retry++;
+                getSentimentsByCategory(retry, dateFrom, dateTo)
+            })
+    }
+
+    function getSentimentsCounts(retry = 0, dateFrom, dateTo) {
+        setAnalytics({ total: 0, positive: 0, negative: 0 })
+        if (retry >= 3) {
+            return
+        }
+        const options = {
+            url: NodeAPI + "/getSortedDocumentsWithGroupBy",
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            data: {
+                task: "getSentimentsCounts",
+                database: "InsightFeed",
+                collection: "news",
+                filter: {
+                    "timestamp": { "$gte": dateFrom, "$lte": dateTo },
+                    "analyzed": true,
+                    "sentiment": { "$ne": null }
+                },
+                sort: { "timestamp": -1 },
+                group: "sentiment",
+                countOnly: true
+            }
+        };
+        return axios(options)
+            .then(res => {
+                const data = { total: 0, positive: 0, negative: 0 }
+                if (res.data.length > 0) {
+                    for (const { _id, count } of res.data) {
+                        data[_id] = count
+                    }
+                    data["total"] = data["positive"] + data["negative"];
+                    setAnalytics(data);
+                }
+                setFromDate(dateFrom);
+                setToDate(dateTo);
+                setSentimentsByCategoryLoading(true);
+                getSentimentsByCategory(0, dateFrom, dateTo);
+            })
+            .catch(err => {
+                console.log(err);
+                retry++;
+                getSentimentsCounts(retry, dateFrom, dateTo)
+            })
+    }
+
+    let hit = false;
 
     useEffect(() => {
-        function getLatestNews(retry) {
+        function getLatestNews(retry = 0) {
+            hit = true;
             if (retry >= 3) {
+                Toast.fire({
+                    icon: "warning",
+                    title: "Can you please try again in a few minutes?"
+                });
                 return
             }
             const options = {
@@ -39,39 +214,7 @@ export default function Home() {
             axios(options)
                 .then(res => {
                     setLatestNews(res.data);
-                    function getCategorizeNews(retry) {
-                        if (retry >= 3) {
-                            return
-                        }
-                        const options = {
-                            url: NodeAPI + "/getSortedDocumentsWithGroupBy",
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            data: {
-                                database: "InsightFeed",
-                                collection: "news",
-                                filter: {
-                                    "timestamp": { "$gte": fromDate, "$lte": toDate },
-                                    "analyzed": true,
-                                    "sentiment": { "$ne": null }
-                                },
-                                sort: { "timestamp": -1 },
-                                group: "category"
-                            }
-                        };
-                        axios(options)
-                            .then(res => {
-                                setNews(res.data);
-                            })
-                            .catch(err => {
-                                console.log(err);
-                                retry++;
-                                getCategorizeNews(retry)
-                            })
-                    }
-                    getCategorizeNews(0)
+                    getSentimentsCounts(0, fromDate, toDate);
                 })
                 .catch(err => {
                     console.log(err);
@@ -79,29 +222,18 @@ export default function Home() {
                     getLatestNews(retry);
                 })
         }
-        getLatestNews(0);
+        if (hit === false) getLatestNews()
     }, [])
 
     const showFilter = (position = "center") => {
-        const Toast = Swal.mixin({
-            toast: true,
-            position: "top-end",
-            showConfirmButton: false,
-            timer: 5000,
-            timerProgressBar: true,
-            didOpen: (toast) => {
-                toast.onmouseenter = Swal.stopTimer;
-                toast.onmouseleave = Swal.resumeTimer;
-            }
-        });
         Swal.fire({
+            title: "<i class=\"fa fa-calendar\" aria-hidden=\"true\"></i> DATE FILTER",
             customClass: {
                 title: "w3-xlarge",
                 htmlContainer: "w3-container",
                 confirmButton: "w3-green",
                 denyButton: "w3-red"
             },
-            title: "<i class=\"fa fa-calendar\" aria-hidden=\"true\"></i> DATE FILTER",
             position: position,
             html: `
                 <label class="w3-left">From Date</label>
@@ -118,33 +250,8 @@ export default function Home() {
             showLoaderOnConfirm: true,
             showLoaderOnDeny: true,
             preDeny: () => {
-                const options = {
-                    url: NodeAPI + "/getSortedDocumentsWithGroupBy",
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    data: {
-                        database: "InsightFeed",
-                        collection: "news",
-                        filter: { "timestamp": { "$gte": moment().startOf("day").valueOf(), "$lte": moment().valueOf() }, "analyzed": true, "sentiment": { "$ne": null } },
-                        sort: { "timestamp": -1 },
-                        group: "category"
-                    }
-                };
-                return axios(options)
-                    .then(res => {
-                        setFromDate(moment().startOf("day").valueOf())
-                        setToDate(moment().valueOf())
-                        setNews(res.data);
-                    })
-                    .catch(err => {
-                        console.log(err);
-                        Toast.fire({
-                            icon: "error",
-                            title: err.message
-                        });
-                    })
+                const newFrom = moment().startOf("day").valueOf(), newTo = moment().valueOf();
+                return getSentimentsCounts(0, newFrom, newTo);
             },
             preConfirm: () => {
                 const expectedFormat = "YYYY-MMM-DD h:mm A"
@@ -193,33 +300,8 @@ export default function Home() {
                     });
                     return
                 }
-                const options = {
-                    url: NodeAPI + "/getSortedDocumentsWithGroupBy",
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    data: {
-                        database: "InsightFeed",
-                        collection: "news",
-                        filter: { "timestamp": { "$gte": M_from.valueOf(), "$lte": M_to.valueOf() }, "analyzed": true, "sentiment": { "$ne": null } },
-                        sort: { "timestamp": -1 },
-                        group: "category"
-                    }
-                };
-                return axios(options)
-                    .then(res => {
-                        setFromDate(M_from.valueOf())
-                        setToDate(M_to.valueOf())
-                        setNews(res.data);
-                    })
-                    .catch(err => {
-                        console.log(err);
-                        Toast.fire({
-                            icon: "error",
-                            title: err.message
-                        });
-                    })
+                const newFrom = M_from.valueOf(), newTo = M_to.valueOf();
+                return getSentimentsCounts(0, newFrom, newTo);
             }
         });
     }
@@ -259,27 +341,20 @@ export default function Home() {
             </div>
 
             <div className="w3-margin-top w3-row-padding">
-                {
-                    true &&
-                    (
-                        <div className="w3-third w3-margin-bottom">
-                            <div className="w3-padding w3-round-xlarge" style={{ backgroundImage: 'linear-gradient(to right, #4facfe 0%, #00f2fe 100%)', color: "#ffffff" }}>
-                                <div className="w3-left w3-xlarge">
-                                    <i className="fa fa-rss" /> <b>News</b>
-                                </div>
-                                <div className="w3-clear" />
-                                <h4>
-                                    {
-                                        news ?
-                                            <span>{news.reduce((accumulator, item) => accumulator + item.data.length, 0)} Results Found</span>
-                                            :
-                                            <span><i className="w3-spin fa fa-spinner"></i> Calculating...</span>
-                                    }
-                                </h4>
-                            </div>
+
+                <div className="w3-third w3-margin-bottom">
+                    <div className="w3-padding w3-round-xlarge" style={{ backgroundImage: 'linear-gradient(to right, #4facfe 0%, #00f2fe 100%)', color: "#ffffff" }}>
+                        <div className="w3-left w3-xlarge">
+                            <i className="fa fa-newspaper-o" /> <b>News</b>
                         </div>
-                    )
-                }
+                        <div className="w3-clear" />
+                        <h4>
+                            <span><i style={{ fontWeight: "bold" }} className="fa fa-rss-square total-count w3-text-blue-grey" /> {analytics["total"] ? <span>{analytics["total"]}</span> : <i className="w3-spin fa fa-circle-o-notch"></i>}</span>&nbsp;
+                            <span><i style={{ fontWeight: "bold" }} className="fa fa-smile-o positive-count w3-text-teal" /> {analytics["positive"] ? <span>{analytics["positive"]}</span> : <i className="w3-spin fa fa-circle-o-notch"></i>}</span>&nbsp;
+                            <span><i style={{ fontWeight: "bold" }} className="fa fa-frown-o negative-count w3-text-red" /> {analytics["negative"] ? <span>{analytics["negative"]}</span> : <i className="w3-spin fa fa-circle-o-notch"></i>}</span>
+                        </h4>
+                    </div>
+                </div>
                 {
                     fromDate &&
                     (
@@ -308,6 +383,9 @@ export default function Home() {
                         </div>
                     )
                 }
+                <Tooltip anchorSelect=".total-count" place="top">Total news</Tooltip>
+                <Tooltip anchorSelect=".positive-count" place="top">Feeling positive</Tooltip>
+                <Tooltip anchorSelect=".negative-count" place="top">Feeling negative</Tooltip>
             </div>
 
             <>
@@ -318,22 +396,39 @@ export default function Home() {
 
             <>
                 {
-                    news ? (
-                        <div className="w3-margin-top">
-                            <div className="svg-container">
-                                <Overview news={news} fromDate={fromDate} toDate={toDate} />
+                    sentimentsByCategory ?
+                        (
+                            <div className="w3-margin-top">
+                                <div className="svg-container">
+                                    <Sentiment data={sentimentsByCategory} fromDate={fromDate} toDate={toDate} />
+                                </div>
                             </div>
-
-                            <div className="svg-container">
-                                <Tree news={news} fromDate={fromDate} toDate={toDate} />
-                            </div>
-
-                        </div>
-                    )
+                        )
                         :
-                        <Loader show={latestNews} />
+                        <Loader show={sentimentsByCategoryLoading} />
                 }
             </>
+
+            <>
+                {
+                    news ?
+                        (
+                            <div className="w3-margin-top">
+                                <div className="svg-container">
+                                    <Overview news={news} fromDate={fromDate} toDate={toDate} />
+                                </div>
+
+                                <div className="svg-container">
+                                    <Tree news={news} fromDate={fromDate} toDate={toDate} />
+                                </div>
+
+                            </div>
+                        )
+                        :
+                        <Loader show={categorizeNewsLoading} />
+                }
+            </>
+
         </div>
     )
 }

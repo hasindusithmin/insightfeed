@@ -10,8 +10,8 @@ import { NewsAPI } from '../lib/config';
 
 function Card({ object }) {
     const { title, description, category, sentiment, named_entities, topic_modeling, timestamp } = object;
-    const entities = typeof named_entities === 'object' ? named_entities : [named_entities];
-    const topics = typeof topic_modeling === 'object' ? topic_modeling : [topic_modeling];
+    const entities = typeof named_entities === "string" ? named_entities.includes(",") ? named_entities.split(",") : [named_entities] : named_entities;
+    const topics = typeof topic_modeling === "string" ? topic_modeling.includes(",") ? topic_modeling.split(",") : [topic_modeling] : topic_modeling;
     const [startSearch, setStartSearch] = useState(false);
     const openModal = (retry = 0) => {
         setStartSearch(true);
