@@ -415,7 +415,7 @@ export default function Home() {
                         (
                             <div className="w3-margin-top">
                                 <div className="svg-container">
-                                    <Overview news={news} fromDate={fromDate} toDate={toDate} />
+                                    <Overview news={news} order={sentimentsByCategory.map(({ category }) => category)} fromDate={fromDate} toDate={toDate} />
                                 </div>
 
                                 <div className="svg-container">

@@ -20,8 +20,8 @@ function groupBySentiment({ data }) {
 }
 
 
-export default function Overview({ news, fromDate, toDate }) {
-
+export default function Overview({ news, order, fromDate, toDate }) {
+    const getCount = (catagory) => news.filter(({ _id }) => _id === catagory)[0]['count'];
     const initOptions = {
         title: {
             text: 'Types of News',
@@ -35,7 +35,7 @@ export default function Overview({ news, fromDate, toDate }) {
             containLabel: true
         },
         xAxis: {
-            data: news.map(({ _id }) => _id),
+            data: order,
             axisLabel: {
                 inside: true,
                 color: '#fff'
@@ -85,7 +85,7 @@ export default function Overview({ news, fromDate, toDate }) {
                         ])
                     }
                 },
-                data: news.map(({ data }) => data.length),
+                data: order.map(category => getCount(category)),
             }
         ],
         toolbox: {
