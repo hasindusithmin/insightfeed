@@ -1,8 +1,7 @@
 import axios from "axios"
 import { useEffect, useState } from "react"
-import { NodeAPI } from "../lib/config"
+import { NodeAPI, dataPreProcess, getAxiosOptions } from "../lib/config"
 import moment from "moment"
-import Overview from "../charts/Overview";
 import Loader from "../components/Loaders";
 import Tree from "../charts/Tree";
 import Swal from "sweetalert2";
@@ -10,24 +9,11 @@ import Vortex from "../components/Vortex";
 import { Typewriter } from 'react-simple-typewriter'
 import Slides from "../components/Slides";
 import { Tooltip } from "react-tooltip";
-import Sentiment from "../charts/Sentiment";
+import LineSentiment from "../charts/LineSentiment";
+import BarSentimentNested from "../charts/BarSentimentNested";
 
 export default function Home() {
-
-    function dataPreProcess(rawData) {
-        const processedData = []
-        for (const { _id, count, data } of rawData) {
-            const dataOfCategory = []
-            for (const dt of data) {
-                let { named_entities, topic_modeling } = dt;
-                dt['named_entities'] = typeof named_entities === "string" ? named_entities.includes(",") ? named_entities.split(",") : [named_entities] : named_entities;
-                dt['topic_modeling'] = typeof topic_modeling === "string" ? topic_modeling.includes(",") ? topic_modeling.split(",") : [topic_modeling] : topic_modeling;
-                dataOfCategory.push(dt);
-            }
-            processedData.push({ _id, count, data: dataOfCategory })
-        }
-        return processedData
-    }
+    let run = true; //don't remove
 
     const Toast = Swal.mixin({
         toast: true,
@@ -41,155 +27,107 @@ export default function Home() {
         }
     });
 
-    const [categorizeNewsLoading, setCategorizeNewsLoading] = useState(false);
-    const [sentimentsByCategoryLoading, setSentimentsByCategoryLoading] = useState(false);
-
-    const [fromDate, setFromDate] = useState(moment().startOf("day").valueOf());
-    const [toDate, setToDate] = useState(moment().valueOf());
-    const [news, setNews] = useState(null);
+    const [fromDate, setFromDate] = useState(null);
+    const [toDate, setToDate] = useState(null);
     const [latestNews, setLatestNews] = useState(null);
     const [analytics, setAnalytics] = useState({ total: 0, positive: 0, negative: 0 });
-    const [sentimentsByCategory, setSentimentsByCategory] = useState(null);
+    const [disableFilter, setDisbleFilter] = useState(true);
 
+    const [Line, SetLine] = useState(null);
+    const [BarAndTree, SetBarAndTree] = useState(null);
 
-
-
-    function getCategorizeNews(retry = 0, dateFrom, dateTo) {
-        if (retry >= 3) {
-            setCategorizeNewsLoading(false);
-            return
-        }
-        const options = {
-            url: NodeAPI + "/getSortedDocumentsWithGroupBy",
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            data: {
-                task: "getCategorizeNews",
-                database: "InsightFeed",
-                collection: "news",
-                filter: {
-                    "timestamp": { "$gte": dateFrom, "$lte": dateTo },
-                    "analyzed": true,
-                    "sentiment": { "$ne": null }
-                },
-                sort: { "timestamp": -1 },
-                group: "category"
+    function RENDER(ID, RES) {
+        if (ID === "COUNTS") {
+            const data = { total: 0, positive: 0, negative: 0 }
+            if (RES.length > 0) {
+                for (const { _id, count } of RES) {
+                    data[_id] = count
+                }
+                data["total"] = data["positive"] + data["negative"];
+                setAnalytics(data);
             }
-        };
-        axios(options)
-            .then(res => {
-                setNews(dataPreProcess(res.data));
-                setCategorizeNewsLoading(false);
-
-            })
-            .catch(err => {
-                console.log(err);
-                retry++;
-                getCategorizeNews(retry, dateFrom, dateTo);
-            })
+        }
+        else if (ID === "LINE") {
+            const array = []
+            for (const { _id, sentiments } of RES) {
+                const object = {
+                    category: _id,
+                    positive: 0,
+                    negative: 0,
+                };
+                for (const { sentiment, count } of sentiments) {
+                    const kname = sentiment.toLowerCase()
+                    object[kname] = count;
+                }
+                array.push(object);
+            }
+            const arr = array.map(data => ({ category: data['category'], positive: data['positive'], negative: data['negative'], total: data['positive'] + data['negative'] }))
+            arr.sort((a, b) => a.total - b.total)
+            SetLine(arr);
+        }
+        else if (ID === "BAR&TREE") {
+            SetBarAndTree(dataPreProcess(RES));
+        }
     }
 
-    function getSentimentsByCategory(retry = 0, dateFrom, dateTo) {
-        if (retry >= 3) {
+    function NOT_RENDER(ID) {
+        if (ID === "COUNTS") {
+            setAnalytics({ total: 0, positive: 0, negative: 0 });
+        }
+        else if (ID === "LINE") {
+            SetLine("\"Oops! Can't show the view right now. Try again later!\"")
+        }
+        else if (ID === "BAR&TREE") {
+            SetBarAndTree("\"Oops! Can't show the view right now. Try again later!\"");
+        }
+    }
+
+    function getPromiseFunctionList(dateFrom, dateTo) {
+
+        setAnalytics({ total: 0, positive: 0, negative: 0 }); setFromDate(null); setToDate(null);
+        SetLine(null); SetBarAndTree(null);
+        const axiosOptions = getAxiosOptions(dateFrom, dateTo);
+        return axiosOptions.map(option => ({ "ID": option.type, "trigger": () => axios(option) }));
+    }
+
+    function getData(retry, dateFrom, dateTo, promiseFunctionList) {
+
+        if (retry > 3) {
+            promiseFunctionList.map(({ ID }) => NOT_RENDER(ID))
             return
         }
-        const options = {
-            url: NodeAPI + "/getSentimentCountsByCategory",
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            data: {
-                filter: {
-                    "timestamp": { "$gte": dateFrom, "$lte": dateTo },
-                    "analyzed": true,
-                    "sentiment": { "$ne": null }
-                }
-            }
-        };
-        axios(options)
-            .then(res => {
-                const array = []
-                for (const { _id, sentiments } of res.data) {
-                    const object = {
-                        category: _id,
-                        positive: 0,
-                        negative: 0,
-                    };
-                    for (const { sentiment, count } of sentiments) {
-                        const kname = sentiment.toLowerCase()
-                        object[kname] = count;
+        return Promise.allSettled(promiseFunctionList.map(({ trigger }) => trigger()))
+            .then(responses => {
+                setFromDate(dateFrom); setToDate(dateTo);
+
+                const rejectedPromiseFunctionList = [];
+                for (const { status, value, reason } of responses) {
+                    if (status === "fulfilled") {
+                        const { data, config } = value;
+                        const { id } = JSON.parse(config.data);
+                        RENDER(id, data);
                     }
-                    array.push(object);
-                }
-                const arr = array.map(data => ({ category: data['category'], positive: data['positive'], negative: data['negative'], total: data['positive'] + data['negative'] }))
-                arr.sort((a, b) => a.total - b.total)
-                setSentimentsByCategoryLoading(false);
-                setSentimentsByCategory(arr);
-                setCategorizeNewsLoading(true)
-                getCategorizeNews(0, dateFrom, dateTo);
-            })
-            .catch(err => {
-                console.log(err);
-                retry++;
-                getSentimentsByCategory(retry, dateFrom, dateTo)
-            })
-    }
-
-    function getSentimentsCounts(retry = 0, dateFrom, dateTo) {
-        setAnalytics({ total: 0, positive: 0, negative: 0 })
-        if (retry >= 3) {
-            return
-        }
-        const options = {
-            url: NodeAPI + "/getSortedDocumentsWithGroupBy",
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            data: {
-                task: "getSentimentsCounts",
-                database: "InsightFeed",
-                collection: "news",
-                filter: {
-                    "timestamp": { "$gte": dateFrom, "$lte": dateTo },
-                    "analyzed": true,
-                    "sentiment": { "$ne": null }
-                },
-                sort: { "timestamp": -1 },
-                group: "sentiment",
-                countOnly: true
-            }
-        };
-        return axios(options)
-            .then(res => {
-                const data = { total: 0, positive: 0, negative: 0 }
-                if (res.data.length > 0) {
-                    for (const { _id, count } of res.data) {
-                        data[_id] = count
+                    if (status === "rejected") {
+                        const { config } = reason;
+                        const { id } = JSON.parse(config.data);
+                        const axiosOptions = getAxiosOptions(dateFrom, dateTo);
+                        const option = axiosOptions.find(opt => opt.type === id);
+                        rejectedPromiseFunctionList.push({ "ID": option.type, "trigger": () => axios(option) })
                     }
-                    data["total"] = data["positive"] + data["negative"];
-                    setAnalytics(data);
                 }
-                setFromDate(dateFrom);
-                setToDate(dateTo);
-                setSentimentsByCategoryLoading(true);
-                getSentimentsByCategory(0, dateFrom, dateTo);
+                if (rejectedPromiseFunctionList.length > 0) {
+                    retry++;
+                    getData(retry, dateFrom, dateTo, rejectedPromiseFunctionList);
+                }
+                else {
+                    setDisbleFilter(false);
+                }
             })
-            .catch(err => {
-                console.log(err);
-                retry++;
-                getSentimentsCounts(retry, dateFrom, dateTo)
-            })
-    }
 
-    let hit = false;
+    }
 
     useEffect(() => {
-        function getLatestNews(retry = 0) {
-            hit = true;
+        function getLatestNews(retry = 0, dateFrom, dateTo) {
             if (retry >= 3) {
                 Toast.fire({
                     icon: "warning",
@@ -198,6 +136,7 @@ export default function Home() {
                 return
             }
             const options = {
+                type: "LATESTNEWS",
                 url: NodeAPI + "/getDocuments",
                 method: 'POST',
                 headers: {
@@ -206,23 +145,38 @@ export default function Home() {
                 data: {
                     database: "InsightFeed",
                     collection: "news",
-                    filter: { "analyzed": true, "sentiment": { "$ne": null }, "description": { "$ne": null } },
+                    filter: {
+                        "analyzed": true,
+                        "sentiment": { "$ne": null },
+                        "description": { "$ne": null },
+                        "timestamp": { "$gte": dateFrom, "$lte": dateTo }
+                    },
                     sort: { "timestamp": -1 },
                     limit: 10
                 }
             };
             axios(options)
                 .then(res => {
-                    setLatestNews(res.data);
-                    getSentimentsCounts(0, fromDate, toDate);
+                    if (res.data.length < 10) {
+                        const recommendedDateFrom = moment().startOf("day").subtract(6, 'hours').valueOf();
+                        getLatestNews(0, recommendedDateFrom, dateTo);
+                    } else {
+                        setLatestNews(res.data);
+                        const promiseFunctionList = getPromiseFunctionList(dateFrom, dateTo);
+                        getData(0, dateFrom, dateTo, promiseFunctionList);
+                    }
                 })
                 .catch(err => {
                     console.log(err);
                     retry++;
-                    getLatestNews(retry);
+                    getLatestNews(retry, dateFrom, dateTo);
                 })
         }
-        if (hit === false) getLatestNews()
+        if (run) {
+            run = false;
+            const dateFrom = moment().startOf("day").valueOf(), dateTo = moment().valueOf();
+            getLatestNews(0, dateFrom, dateTo);
+        }
     }, [])
 
     const showFilter = (position = "center") => {
@@ -251,7 +205,8 @@ export default function Home() {
             showLoaderOnDeny: true,
             preDeny: () => {
                 const newFrom = moment().startOf("day").valueOf(), newTo = moment().valueOf();
-                return getSentimentsCounts(0, newFrom, newTo);
+                const promiseFunctionList = getPromiseFunctionList(newFrom, newTo);
+                return getData(0, newFrom, newTo, promiseFunctionList);
             },
             preConfirm: () => {
                 const expectedFormat = "YYYY-MMM-DD h:mm A"
@@ -301,7 +256,8 @@ export default function Home() {
                     return
                 }
                 const newFrom = M_from.valueOf(), newTo = M_to.valueOf();
-                return getSentimentsCounts(0, newFrom, newTo);
+                const promiseFunctionList = getPromiseFunctionList(newFrom, newTo);
+                return getData(0, newFrom, newTo, promiseFunctionList);
             }
         });
     }
@@ -314,7 +270,7 @@ export default function Home() {
             <div></div>
             <div className="w3-display-container">
                 <div className="w3-display-topright">
-                    <button className="w3-button w3-green w3-round-large" onClick={() => showFilter("top-end")} disabled={!news}>
+                    <button className="w3-button w3-green w3-round-large" onClick={() => showFilter("top-end")} disabled={disableFilter}>
                         <i className="fa fa-filter"></i>
                     </button>
                 </div>
@@ -340,6 +296,8 @@ export default function Home() {
                 </div>
             </div>
 
+
+            {/* Dashboard */}
             <div className="w3-margin-top w3-row-padding">
 
                 <div className="w3-third w3-margin-bottom">
@@ -355,77 +313,82 @@ export default function Home() {
                         </h4>
                     </div>
                 </div>
-                {
-                    fromDate &&
-                    (
-                        <div className="w3-third w3-margin-bottom" style={{ cursor: 'pointer' }} onClick={showFilter}>
-                            <div className="w3-padding w3-round-xlarge" style={{ backgroundImage: 'linear-gradient(to right, #43e97b 0%, #38f9d7 100%)', color: "#ffffff" }}>
-                                <div className="w3-left w3-xlarge">
-                                    <i className="fa fa-calendar-plus-o" /> <b>Date From</b>
-                                </div>
-                                <div className="w3-clear" />
-                                <h4>{moment(fromDate).format('MMM Do YYYY, h:mm A')}</h4>
-                            </div>
+
+                <div className="w3-third w3-margin-bottom" style={{ cursor: 'pointer' }} onClick={showFilter}>
+                    <div className="w3-padding w3-round-xlarge" style={{ backgroundImage: 'linear-gradient(to right, #43e97b 0%, #38f9d7 100%)', color: "#ffffff" }}>
+                        <div className="w3-left w3-xlarge">
+                            <i className="fa fa-calendar-plus-o" /> <b>Date From</b>
                         </div>
-                    )
-                }
-                {
-                    toDate &&
-                    (
-                        <div className="w3-third w3-margin-bottom" style={{ cursor: 'pointer' }} onClick={showFilter}>
-                            <div className="w3-padding w3-round-xlarge" style={{ backgroundImage: ' linear-gradient(to right, #fa709a 0%, #fee140 100%)', color: "#ffffff" }}>
-                                <div className="w3-left w3-xlarge">
-                                    <i className="fa fa-calendar-minus-o" /> <b>Date To</b>
-                                </div>
-                                <div className="w3-clear" />
-                                <h4>{moment(toDate).format('MMM Do YYYY, h:mm A')}</h4>
-                            </div>
+                        <div className="w3-clear" />
+                        <h4>{fromDate ? moment(fromDate).format('MMM Do YYYY, h:mm A') : <i className="w3-spin fa fa-circle-o-notch"></i>}</h4>
+                    </div>
+                </div>
+
+                <div className="w3-third w3-margin-bottom" style={{ cursor: 'pointer' }} onClick={showFilter}>
+                    <div className="w3-padding w3-round-xlarge" style={{ backgroundImage: ' linear-gradient(to right, #fa709a 0%, #fee140 100%)', color: "#ffffff" }}>
+                        <div className="w3-left w3-xlarge">
+                            <i className="fa fa-calendar-minus-o" /> <b>Date To</b>
                         </div>
-                    )
-                }
+                        <div className="w3-clear" />
+                        <h4>{toDate ? moment(toDate).format('MMM Do YYYY, h:mm A') : <i className="w3-spin fa fa-circle-o-notch"></i>}</h4>
+                    </div>
+                </div>
+
                 <Tooltip anchorSelect=".total-count" place="top">Total news</Tooltip>
                 <Tooltip anchorSelect=".positive-count" place="top">Feeling positive</Tooltip>
                 <Tooltip anchorSelect=".negative-count" place="top">Feeling negative</Tooltip>
             </div>
 
+            {/* Latest News Swiper  */}
             <>
                 {
-                    latestNews ? <Slides latestNews={latestNews} /> : <Loader show={true} />
+                    latestNews ? <Slides latestNews={latestNews} /> : <Loader />
+                }
+            </>
+
+            {/* Line Chart - Sentiments  */}
+            <>
+                {
+                    typeof Line === "string" ?
+                        (
+                            <div className="w3-margin-top">
+                                <p className="w3-text-red w3-large w3-padding-32 w3-center" style={{ fontWeight: "bold" }}>
+                                    <i className="w3-hover-text-black">{Line}</i>
+                                </p>
+                            </div>
+                        )
+                        :
+                        Line &&
+                        (
+                            <div className="w3-margin-top">
+                                <div className="svg-container hide-scrollbar" style={{ overflow: "hidden" }}>
+                                    <LineSentiment data={Line} fromDate={fromDate} toDate={toDate} />
+                                </div>
+                            </div>
+                        )
+                }
+                {
+                    !Line && <Loader />
                 }
             </>
 
             <>
                 {
-                    sentimentsByCategory ?
+                    BarAndTree ?
                         (
                             <div className="w3-margin-top">
                                 <div className="svg-container">
-                                    <Sentiment data={sentimentsByCategory} fromDate={fromDate} toDate={toDate} />
-                                </div>
-                            </div>
-                        )
-                        :
-                        <Loader show={sentimentsByCategoryLoading} />
-                }
-            </>
-
-            <>
-                {
-                    news ?
-                        (
-                            <div className="w3-margin-top">
-                                <div className="svg-container">
-                                    <Overview news={news} order={sentimentsByCategory.map(({ category }) => category)} fromDate={fromDate} toDate={toDate} />
+                                    <BarSentimentNested news={BarAndTree} fromDate={fromDate} toDate={toDate} />
                                 </div>
 
                                 <div className="svg-container">
-                                    <Tree news={news} fromDate={fromDate} toDate={toDate} />
+                                    <Tree news={BarAndTree} fromDate={fromDate} toDate={toDate} />
                                 </div>
 
                             </div>
                         )
                         :
-                        <Loader show={categorizeNewsLoading} />
+                        <Loader />
                 }
             </>
 

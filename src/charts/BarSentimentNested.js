@@ -20,11 +20,11 @@ function groupBySentiment({ data }) {
 }
 
 
-export default function Overview({ news, order, fromDate, toDate }) {
-    const getCount = (catagory) => news.filter(({ _id }) => _id === catagory)[0]['count'];
+export default function BarSentimentNested({ news, fromDate, toDate }) {
+    news.sort((a, b) => a._id.localeCompare(b._id));
     const initOptions = {
         title: {
-            text: 'Types of News',
+            text: 'InsightFeed',
             subtext: `From ${moment(fromDate).format('MMM Do YYYY, h:mm A')} To ${moment(toDate).format('MMM Do YYYY, h:mm A')}`,
             left: 'left'
         },
@@ -35,7 +35,7 @@ export default function Overview({ news, order, fromDate, toDate }) {
             containLabel: true
         },
         xAxis: {
-            data: order,
+            data: news.map(({ _id }) => _id).sort(),
             axisLabel: {
                 inside: true,
                 color: '#fff'
@@ -85,7 +85,7 @@ export default function Overview({ news, order, fromDate, toDate }) {
                         ])
                     }
                 },
-                data: order.map(category => getCount(category)),
+                data: news.map(({ data }) => data.length),
             }
         ],
         toolbox: {

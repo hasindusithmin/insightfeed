@@ -107,7 +107,7 @@ export default function Tree({ news, fromDate, toDate }) {
 
     const option = {
         title: {
-            text: 'Categorizing News',
+            text: 'InsightFeed',
             subtext: `From ${moment(fromDate).format('MMM Do YYYY, h:mm A')} To ${moment(toDate).format('MMM Do YYYY, h:mm A')}`,
             left: 'left'
         },
@@ -148,7 +148,8 @@ export default function Tree({ news, fromDate, toDate }) {
                 left: '7%',
                 bottom: '1%',
                 right: '20%',
-                symbolSize: 7,
+                symbol: 'diamond',
+                symbolSize: 10,
                 label: {
                     position: 'left',
                     verticalAlign: 'middle',

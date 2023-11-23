@@ -2031,3 +2031,7 @@ a {
   font-weight: bold;
   color: #fff;
 }
+
+.hide-scrollbar::-webkit-scrollbar {
+  width: 0px;
+}
