@@ -1,7 +1,8 @@
 
 import ReactEcharts from "echarts-for-react"
 import moment from "moment";
-export default function LineSentiment({ data, fromDate, toDate }) {
+import { showCategorizeNews } from "../lib/config";
+export default function LineSentiment({ data, fromDate, toDate, news }) {
     data.sort((a, b) => a.category.localeCompare(b.category))
     const option = {
         title: {
@@ -101,8 +102,12 @@ export default function LineSentiment({ data, fromDate, toDate }) {
     };
 
     const onEvents = {
-        click: (event) => {
-            console.log(event);
+        click: ({ name: category, seriesId: sentiment }) => {
+            const { data } = news.find(({ _id }) => _id === category);
+            const filteredData = sentiment === "total" ? data : data.filter(object => object.sentiment === sentiment);
+            const icon = sentiment === "total" ? "" : sentiment === "positive" ? "<i style=\"color:green\" class=\"fa fa-smile-o\" title=\"positive\"></i>" : "<i style=\"color:red\" class=\"fa fa-frown-o\" title=\"negative\"></i>"
+            const title = `${category} ${icon}`;
+            showCategorizeNews(title, filteredData);
         }
     }
 

@@ -1,7 +1,7 @@
 import ReactEcharts from "echarts-for-react"
 import Swal from "sweetalert2";
 import moment from "moment";
-import { NewsAPI } from "../lib/config";
+import { PythonAPI } from "../lib/config";
 import axios from "axios";
 
 export default function Tree({ news, fromDate, toDate }) {
@@ -13,8 +13,8 @@ export default function Tree({ news, fromDate, toDate }) {
         const negative_entities_children = [], negative_topics_children = []
         for (const categoryObj of categoryArray) {
             // categories data iteration 
-            const entities = typeof categoryObj.named_entities === 'object' ? categoryObj.named_entities : [categoryObj.named_entities]
-            const topics = typeof categoryObj.topic_modeling === 'object' ? categoryObj.topic_modeling : [categoryObj.topic_modeling]
+            const entities = typeof categoryObj.named_entities === "string" ? categoryObj.named_entities.includes(",") ? categoryObj.named_entities.split(",") : [categoryObj.named_entities] : Array.isArray(categoryObj.named_entities) ? categoryObj.named_entities : Object.keys(categoryObj.named_entities);
+            const topics = typeof categoryObj.topic_modeling === "string" ? categoryObj.topic_modeling.includes(",") ? categoryObj.topic_modeling.split(",") : [categoryObj.topic_modeling] : Array.isArray(categoryObj.topic_modeling) ? categoryObj.topic_modeling : Object.keys(categoryObj.topic_modeling);
             if (categoryObj.sentiment === "positive") {
                 // for (const entity of entities) {
                 //     positive_entities_children.push({
@@ -85,7 +85,8 @@ export default function Tree({ news, fromDate, toDate }) {
                         name: "topics",
                         children: positive_topics_children
                     }
-                ]
+                ],
+                collapsed: true
             },
             {
                 name: "negative",
@@ -98,13 +99,14 @@ export default function Tree({ news, fromDate, toDate }) {
                         name: "topics",
                         children: negative_topics_children
                     }
-                ]
+                ],
+                collapsed: true
             }
         ]
         object['collapsed'] = true;
         children.push(object)
     }
-
+    console.log([{ name: "news", children: children }]);
     const option = {
         title: {
             text: 'InsightFeed',
@@ -137,13 +139,14 @@ export default function Tree({ news, fromDate, toDate }) {
         },
         toolbox: {
             feature: {
-                saveAsImage: {}
+                restore: {},
+                saveAsImage: {},
             }
         },
         series: [
             {
                 type: 'tree',
-                data: [{ name: "news", children: children }],
+                data: [{ name: "", children: children }],
                 top: '1%',
                 left: '7%',
                 bottom: '1%',
@@ -176,9 +179,7 @@ export default function Tree({ news, fromDate, toDate }) {
     const onEvents = {
         click: ({ data }) => {
             if (data.hasOwnProperty("news")) {
-                const { title, named_entities, topic_modeling, description, timestamp } = data['news']
-                const entities = typeof named_entities === 'object' ? named_entities : [named_entities]
-                const topics = typeof topic_modeling === 'object' ? topic_modeling : [topic_modeling]
+                const { title, named_entities:entities, topic_modeling:topics, description, timestamp } = data['news']
                 const openModal = () => {
                     Swal.fire({
                         title: title,
@@ -206,7 +207,7 @@ export default function Tree({ news, fromDate, toDate }) {
                         confirmButtonText: "<i class=\"fa fa-newspaper-o\" aria-hidden=\"true\"></i> More",
                         preConfirm: () => {
                             const options = {
-                                url: NewsAPI + "/hotnews/v2",
+                                url: PythonAPI + "/hotnews",
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'application/json'

@@ -3,6 +3,7 @@ import * as echarts from 'echarts/core';
 import moment from "moment";
 import { useState } from "react";
 import Swal from "sweetalert2";
+import { showCategorizeNews } from "../lib/config";
 
 
 function groupBySentiment({ data }) {
@@ -190,49 +191,11 @@ export default function BarSentimentNested({ news, fromDate, toDate }) {
 
     const onEventsNested = {
         click: ({ name: sentiment, seriesId: category }) => {
-            const category_data = news.filter(({ _id }) => _id === category);
-            const { data = [] } = category_data.length > 0 ? category_data[0] : {};
-            const required = data.filter(object => object.sentiment === sentiment);
+            const { data } = news.find(({ _id }) => _id === category);
+            const filteredData = data.filter(object => object.sentiment === sentiment);
             const icon = sentiment === "positive" ? "<i class=\"fa fa-smile-o\" title=\"positive\"></i>" : "<i class=\"fa fa-frown-o\" title=\"negative\"></i>"
-            Swal.fire({
-                title: `${category} ${icon}`,
-                customClass: {
-                    title: "w3-xlarge",
-                    htmlContainer: "w3-container scrollable-container"
-                },
-                html: `
-                  ${required.map(({ title, description, named_entities, topic_modeling, timestamp }) => {
-                    const entities = typeof named_entities === 'object' ? named_entities : [named_entities]
-                    const topics = typeof topic_modeling === 'object' ? topic_modeling : [topic_modeling]
-                    return (
-                        `
-                    <div class="w3-card w3-round-xlarge w3-panel w3-padding" style="margin:10px 5px;">
-                        <div class="w3-large w3-text-grey w3-hover-text-dark-grey" style="font-weight:bold;">
-                            ${title}
-                        </div>
-                        <hr>
-                        <div class="w3-justify">
-                            ${description ? `<span class="w3-text-blue-grey">${description}</span>` : "<span class=\"w3-text-red w3-hover-text-blue-grey\">Sorry, there's no information available about this news at the moment.</span>"}
-                        </div>
-                        <br>
-                        <div class="w3-padding">
-                            ${entities.map(entity => "<span title=\"entity\" style=\"margin:5px;\" class=\"w3-tag w3-padding-small w3-green w3-round-large w3-hover-text-dark-grey\">" + "<i class=\"fa fa-cube\" aria-hidden=\"true\"></i>&nbsp;" + entity + "</span>").join("")}
-                        </div>
-                        <div class="w3-padding">
-                            ${topics.map(topic => "<span title=\"topic\" style=\"margin:5px;\" class=\"w3-tag w3-padding-small w3-blue w3-round-large w3-hover-text-dark-grey\">" + "<i class=\"fa fa-tags\" aria-hidden=\"true\"></i>&nbsp;" + topic + "</span>").join("")}
-                        </div>
-                        <div class="w3-padding w3-left">
-                            <span class="w3-hover-text-blue-grey"><i class="fa fa-clock-o" aria-hidden="true"></i> ${moment(timestamp).format('MMM Do YYYY, h:mm A')}<span>
-                        </div>
-                    </div>
-                    `
-                    )
-                }).join("")}
-                `,
-                showCloseButton: true,
-                showCancelButton: false,
-                showConfirmButton: false
-            });
+            const title = `${category} ${icon}`;
+            showCategorizeNews(title, filteredData);
         }
     }
 

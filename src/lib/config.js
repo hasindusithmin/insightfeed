@@ -1,6 +1,8 @@
+const { default: Swal } = require("sweetalert2")
+const moment = require("moment");
 
 exports.NodeAPI = process.env.REACT_APP_NODE_ENV === "development" ? "http://localhost:8080" : "https://ifnodeapi-1-w5504405.deta.app"
-exports.NewsAPI = "https://claudeapi-1-t7350571.deta.app"
+exports.PythonAPI = process.env.REACT_APP_NODE_ENV === "development" ? "http://localhost:4201" : "https://ifpyapi-1-p4769562.deta.ap"
 
 
 exports.dataPreProcess = (rawData) => {
@@ -79,6 +81,48 @@ exports.getAxiosOptions = (dateFrom, dateTo) => {
             }
         }
     ]
+}
+
+exports.showCategorizeNews = (Title, data) => {
+    Swal.fire({
+        title: Title,
+        customClass: {
+            title: "w3-xlarge",
+            htmlContainer: "w3-container scrollable-container"
+        },
+        html: `
+          ${data.map(({ title, description, named_entities, topic_modeling, timestamp }) => {
+            const entities = typeof named_entities === "string" ? named_entities.includes(",") ? named_entities.split(",") : [named_entities] : Array.isArray(named_entities) ? named_entities : Object.keys(named_entities);
+            const topics = typeof topic_modeling === "string" ? topic_modeling.includes(",") ? topic_modeling.split(",") : [topic_modeling] : Array.isArray(topic_modeling) ? topic_modeling : Object.keys(topic_modeling);
+            return (
+                `
+            <div class="w3-card w3-round-xlarge w3-panel w3-padding" style="margin:10px 5px;">
+                <div class="w3-large w3-text-grey w3-hover-text-dark-grey" style="font-weight:bold;">
+                    ${title}
+                </div>
+                <hr>
+                <div class="w3-justify">
+                    ${description ? `<span class="w3-text-blue-grey">${description}</span>` : "<span class=\"w3-text-red w3-hover-text-blue-grey\">Sorry, there's no information available about this news at the moment.</span>"}
+                </div>
+                <br>
+                <div class="w3-padding">
+                    ${entities.map(entity => "<span title=\"entity\" style=\"margin:5px;\" class=\"w3-tag w3-padding-small w3-green w3-round-large w3-hover-text-dark-grey\">" + "<i class=\"fa fa-cube\" aria-hidden=\"true\"></i>&nbsp;" + entity + "</span>").join("")}
+                </div>
+                <div class="w3-padding">
+                    ${topics.map(topic => "<span title=\"topic\" style=\"margin:5px;\" class=\"w3-tag w3-padding-small w3-blue w3-round-large w3-hover-text-dark-grey\">" + "<i class=\"fa fa-tags\" aria-hidden=\"true\"></i>&nbsp;" + topic + "</span>").join("")}
+                </div>
+                <div class="w3-padding w3-left">
+                    <span class="w3-hover-text-blue-grey"><i class="fa fa-clock-o" aria-hidden="true"></i> ${moment(timestamp).format('MMM Do YYYY, h:mm A')}<span>
+                </div>
+            </div>
+            `
+            )
+        }).join("")}
+        `,
+        showCloseButton: true,
+        showCancelButton: false,
+        showConfirmButton: false
+    });
 }
 
 

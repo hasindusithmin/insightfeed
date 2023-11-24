@@ -152,7 +152,7 @@ export default function Home() {
                         "timestamp": { "$gte": dateFrom, "$lte": dateTo }
                     },
                     sort: { "timestamp": -1 },
-                    limit: 10
+                    limit: 20
                 }
             };
             axios(options)
@@ -292,7 +292,7 @@ export default function Home() {
                     AI-driven news platform <i className="fa fa-check-circle-o" aria-hidden="true"></i>
                 </div>
                 <div className="w3-large">
-                    <Typewriter words={['Gauge news emotions: positive or negative - 🆂🅴🅽🆃🅸🅼🅴🅽🆃 🅰🅽🅰🅻🆈🆂🅸🆂', 'Identify key names and places in news content - 🅽🅰🅼🅴 🅴🅽🆃🅸🆃🆈 🆁🅴🅲🅾🅶🅽🅸🆃🅸🅾🅽', 'Uncover trending news themes quickly - 🆃🅾🅿🅸🅲 🅼🅾🅳🅴🅻🅸🅽🅶', 'Organize news stories into relevant categories - 🅲🅻🅰🆂🆂🅸🅵🅸🅲🅰🆃🅸🅾🅽', 'Present news insights visually for quick understanding: 🆅🅸🆂🆄🅰🅻🅸🆉🅰🆃🅸🅾🅽']} loop={100} cursor cursorStyle='_' />
+                    <Typewriter words={['Gauge News Emotions: Positive Or Negative', 'Identify Key Names And Places In News Content', 'Uncover Trending News Themes Quickly', 'Organize News Stories Into Relevant Categories', 'Present News Insights Visually For Quick Understanding']} loop={100} cursor cursorStyle='_' />
                 </div>
             </div>
 
@@ -358,11 +358,11 @@ export default function Home() {
                             </div>
                         )
                         :
-                        Line &&
+                        Line && BarAndTree &&
                         (
                             <div className="w3-margin-top">
                                 <div className="svg-container hide-scrollbar" style={{ overflow: "hidden" }}>
-                                    <LineSentiment data={Line} fromDate={fromDate} toDate={toDate} />
+                                    <LineSentiment data={Line} fromDate={fromDate} toDate={toDate} news={BarAndTree} />
                                 </div>
                             </div>
                         )
@@ -381,8 +381,12 @@ export default function Home() {
                                     <BarSentimentNested news={BarAndTree} fromDate={fromDate} toDate={toDate} />
                                 </div>
 
-                                <div className="svg-container">
-                                    <Tree news={BarAndTree} fromDate={fromDate} toDate={toDate} />
+                                <div className="w3-padding w3-border">
+                                    <div className="scrollable-container">
+                                        <div className="svg-container">
+                                            <Tree news={BarAndTree} fromDate={fromDate} toDate={toDate} />
+                                        </div>
+                                    </div>
                                 </div>
 
                             </div>
@@ -391,7 +395,7 @@ export default function Home() {
                         <Loader />
                 }
             </>
-
+            <div className="w3-padding-32"></div>
         </div>
     )
 }

@@ -5,10 +5,25 @@ import { Tooltip } from 'react-tooltip'
 import Swal from 'sweetalert2';
 import { useState } from 'react';
 import axios from 'axios';
-import { NewsAPI } from '../lib/config';
-
+import { PythonAPI } from '../lib/config';
+import nlp from "compromise/three";
+import ReactDOMServer from 'react-dom/server';
+import Quora from './modal-templates/Quora';
 
 function Card({ object }) {
+
+    const Toast = Swal.mixin({
+        toast: true,
+        position: "top-end",
+        showConfirmButton: false,
+        timer: 5000,
+        timerProgressBar: true,
+        didOpen: (toast) => {
+            toast.onmouseenter = Swal.stopTimer;
+            toast.onmouseleave = Swal.resumeTimer;
+        }
+    });
+
     const { title, description, category, sentiment, named_entities, topic_modeling, timestamp } = object;
     const entities = typeof named_entities === "string" ? named_entities.includes(",") ? named_entities.split(",") : [named_entities] : Array.isArray(named_entities) ? named_entities : Object.keys(named_entities);
     const topics = typeof topic_modeling === "string" ? topic_modeling.includes(",") ? topic_modeling.split(",") : [topic_modeling] : Array.isArray(topic_modeling) ? topic_modeling : Object.keys(topic_modeling);
@@ -20,7 +35,7 @@ function Card({ object }) {
             return
         }
         const options = {
-            url: NewsAPI + "/hotnews/v2",
+            url: PythonAPI + "/hotnews",
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -86,6 +101,66 @@ function Card({ object }) {
                 openModal(retry);
             })
     }
+
+    const [Entity, SetEntity] = useState("Entity");
+
+    function getEntity(word) {
+        const doc = nlp(word);
+        let people = doc.people().normalize().text();
+        let place = doc.places().normalize().text();
+        let organizations = doc.organizations().normalize().text();
+        let acronyms = doc.acronyms().normalize().text();
+        if (people)
+            SetEntity("Person")
+        else if (place)
+            SetEntity("Place")
+        else if (organizations)
+            SetEntity("Organization")
+        else if (acronyms)
+            SetEntity("Acronyms")
+        else
+            SetEntity("Entity")
+    }
+
+    const PREX = "_button";
+    async function getQuoraResults(event) {
+        const topic = event.target.id;
+        try {
+            document.getElementById(topic).className = "w3-spin fa fa-spinner";
+            document.getElementById(topic + PREX).disabled = true;
+            const options = {
+                url: PythonAPI + "/quora",
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                data: {
+                    "topic": topic
+                }
+            };
+            const res = await axios(options);
+            Swal.fire({
+                title: `Results for ${topic}`,
+                customClass: {
+                    title: "w3-large w3-text-dark-grey",
+                    htmlContainer: "scrollable-container",
+                },
+                html: ReactDOMServer.renderToString(<Quora results={res.data} />),
+                showConfirmButton: false,
+                showCloseButton: true,
+            })
+        } catch (error) {
+            Toast.fire({
+                icon: "info",
+                title: "Oops! No matching data found"
+            });
+        }
+        finally {
+            document.getElementById(topic).className = "fa fa-info-circle";
+            document.getElementById(topic + PREX).disabled = false;
+        }
+    }
+
     return (
         <div className="scrollable-container w3-round-xlarge w3-panel w3-padding" style={{ margin: '10px 5px' }}>
             <div className="w3-padding w3-right">
@@ -110,24 +185,25 @@ function Card({ object }) {
             <br />
             <div className="w3-padding">
                 {entities.map((entity, index) => (
-                    <span
+                    <button
                         key={index}
-                        style={{ margin: '5px' }}
-                        className="w3-large w3-tag w3-padding-small w3-dark-grey w3-opacity w3-round-large w3-hover-text-dark-grey"
+                        style={{ margin: '5px', cursor: "default" }}
+                        className="w3-large w3-button w3-padding-small w3-grey w3-round-large w3-text-white w3-hover-text-black"
                     >
-                        <span className='entity'><i className="fa fa-info-circle" aria-hidden="true"></i></span>&nbsp;{entity}
-                    </span>
+                        <span className='entity' style={{ cursor: "pointer" }}><i className="fa fa-info-circle" aria-hidden="true" onMouseOver={() => { getEntity(entity) }}></i></span>&nbsp;{entity}
+                    </button>
                 ))}
             </div>
             <div className="w3-padding">
                 {topics.map((topic, index) => (
-                    <span
+                    <button
+                        id={topic + PREX}
                         key={index}
-                        style={{ margin: '5px' }}
-                        className="w3-large w3-tag w3-padding-small w3-black w3-opacity w3-round-large w3-hover-text-dark-grey"
+                        style={{ margin: '5px', cursor: "default" }}
+                        className="w3-large w3-button w3-padding-small w3-dark-grey w3-round-large w3-hover-text-black"
                     >
-                        <span className='topic'><i className="fa fa-info-circle" aria-hidden="true"></i></span>&nbsp;{topic}
-                    </span>
+                        <span className='topic' style={{ cursor: "pointer" }} ><i id={topic} className="fa fa-info-circle" onClick={getQuoraResults}></i></span>&nbsp;{topic}
+                    </button>
                 ))}
             </div>
             <div className="w3-padding w3-left w3-text-dark-grey w3-hover-text-black">
@@ -139,8 +215,8 @@ function Card({ object }) {
                 <span className='category w3-tag w3-green w3-opacity-min w3-round-large w3-medium'>{category}</span>
             </div>
             <div className="w3-padding w3-center w3-large">
-                <button className='w3-button w3-blue-grey w3-opacity-min w3-text-white w3-round-xlarge' onClick={openModal} disabled={startSearch}>
-                    {startSearch ? <span className='search'><i className="w3-spin fa fa-spinner"></i></span> : <span className='more'><i className="fa fa-info-circle"></i></span>} Explore More
+                <button style={{ cursor: "default" }} className='w3-button w3-blue-grey w3-opacity-min w3-text-white w3-round-xlarge' onClick={openModal} disabled={startSearch}>
+                    {startSearch ? <span className='search'><i className="w3-spin fa fa-spinner"></i></span> : <span className='more'><i className="fa fa-info-circle" style={{ cursor: "pointer" }}></i></span>} Explore More
                 </button>
             </div>
             <Tooltip anchorSelect=".category" place="top">
@@ -150,13 +226,13 @@ function Card({ object }) {
                 {sentiment === "positive" ? "Feeling is good" : "Feeling is not so good"}
             </Tooltip>
             <Tooltip anchorSelect=".entity" place="top">
-                Entity
+                {Entity}
             </Tooltip>
             <Tooltip anchorSelect=".topic" place="top">
-                Topic
+                Explore Quora Q&A: Click here
             </Tooltip>
             <Tooltip anchorSelect=".more" place="top">
-                See more news by clicking here
+                Read additional news: Click here
             </Tooltip>
             <Tooltip anchorSelect=".search" place="top">
                 Searching...
