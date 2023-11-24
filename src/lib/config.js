@@ -2,7 +2,7 @@ const { default: Swal } = require("sweetalert2")
 const moment = require("moment");
 
 exports.NodeAPI = process.env.REACT_APP_NODE_ENV === "development" ? "http://localhost:8080" : "https://ifnodeapi-1-w5504405.deta.app"
-exports.PythonAPI = process.env.REACT_APP_NODE_ENV === "development" ? "http://localhost:4201" : "https://ifpyapi-1-p4769562.deta.ap"
+exports.PythonAPI = process.env.REACT_APP_NODE_ENV === "development" ? "http://localhost:4201" : "https://ifpyapi-1-p4769562.deta.app"
 
 
 exports.dataPreProcess = (rawData) => {
