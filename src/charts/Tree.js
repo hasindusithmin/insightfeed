@@ -106,7 +106,6 @@ export default function Tree({ news, fromDate, toDate }) {
         object['collapsed'] = true;
         children.push(object)
     }
-    console.log([{ name: "news", children: children }]);
     const option = {
         title: {
             text: 'InsightFeed',

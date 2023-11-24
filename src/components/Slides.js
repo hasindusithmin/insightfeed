@@ -30,10 +30,6 @@ function Card({ object }) {
     const [startSearch, setStartSearch] = useState(false);
     const openModal = (retry = 0) => {
         setStartSearch(true);
-        if (retry >= 2) {
-            setStartSearch(false);
-            return
-        }
         const options = {
             url: PythonAPI + "/hotnews",
             method: 'POST',
@@ -97,8 +93,11 @@ function Card({ object }) {
             })
             .catch(err => {
                 console.log(err);
-                retry++;
-                openModal(retry);
+                setStartSearch(false);
+                Toast.fire({
+                    icon: "info",
+                    title: "Oops! No matching data found"
+                });
             })
     }
 
