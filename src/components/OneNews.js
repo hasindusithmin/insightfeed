@@ -103,8 +103,6 @@ export function OneNews({ object }) {
             })
     }
 
-    const [Entity, SetEntity] = useState("");
-
     function getEntity(word) {
         const doc = nlp(word);
         let people = doc.people().normalize().text();
@@ -125,10 +123,11 @@ export function OneNews({ object }) {
 
     const PREX = "_button";
     async function getQuoraResults(event) {
+
         const topic = event.target.id;
         try {
-            document.getElementById(topic).className = "w3-spin fa fa-spinner";
-            document.getElementById(topic + PREX).disabled = true;
+            event.target.className = "w3-spin fa fa-spinner";
+            event.target.parentNode.parentNode.disabled = true;
             const options = {
                 url: PythonAPI + "/quora",
                 method: 'POST',
@@ -157,8 +156,8 @@ export function OneNews({ object }) {
             });
         }
         finally {
-            document.getElementById(topic).className = "fa fa-info-circle";
-            document.getElementById(topic + PREX).disabled = false;
+            event.target.className = "fa fa-info-circle";
+            event.target.parentNode.parentNode.disabled = false;
         }
     }
 
