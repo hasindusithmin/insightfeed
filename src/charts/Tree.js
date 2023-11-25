@@ -108,7 +108,7 @@ export default function Tree({ news, fromDate, toDate }) {
     }
     const option = {
         title: {
-            text: 'InsightFeed',
+            text: 'Classification',
             subtext: `From ${moment(fromDate).format('MMM Do YYYY, h:mm A')} To ${moment(toDate).format('MMM Do YYYY, h:mm A')}`,
             left: 'left'
         },
@@ -156,7 +156,8 @@ export default function Tree({ news, fromDate, toDate }) {
                     position: 'left',
                     verticalAlign: 'middle',
                     align: 'right',
-                    fontSize: 12,
+                    fontSize: 15,
+                    fontWeight: "bold"
                 },
                 leaves: {
                     label: {
@@ -178,7 +179,7 @@ export default function Tree({ news, fromDate, toDate }) {
     const onEvents = {
         click: ({ data }) => {
             if (data.hasOwnProperty("news")) {
-                const { title, named_entities:entities, topic_modeling:topics, description, timestamp } = data['news']
+                const { title, named_entities: entities, topic_modeling: topics, description, timestamp } = data['news']
                 const openModal = () => {
                     Swal.fire({
                         title: title,
@@ -281,7 +282,7 @@ export default function Tree({ news, fromDate, toDate }) {
     return (
         <ReactEcharts
             option={option}
-            style={{ width: "100%", height: 1000 }}
+            style={{ width: "100%", height: 1000, backgroundColor: "#f1f1f1" }}
             onEvents={onEvents}
         />
     )

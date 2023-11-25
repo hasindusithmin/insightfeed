@@ -10,7 +10,9 @@ import { Typewriter } from 'react-simple-typewriter'
 import Slides from "../components/Slides";
 import { Tooltip } from "react-tooltip";
 import LineSentiment from "../charts/LineSentiment";
-import BarSentimentNested from "../charts/BarSentimentNested";
+import NERWordCloud from "../charts/NERWordCloud";
+import TMWordCloud from "../charts/TMWordCloud";
+import ALLNewsView from "../components/ALLNews";
 
 export default function Home() {
     let run = true; //don't remove
@@ -35,12 +37,15 @@ export default function Home() {
 
     const [Line, SetLine] = useState(null);
     const [BarAndTree, SetBarAndTree] = useState(null);
+    const [NER_WC, SetNER_WC] = useState(null);
+    const [TM_WC, SetTM_WC] = useState(null);
+    const [ALLNEWS, SetALLNEWS] = useState(null);
 
-    function RENDER(ID, RES) {
+    function RENDER(ID, PAYLOAD) {
         if (ID === "COUNTS") {
             const data = { total: 0, positive: 0, negative: 0 }
-            if (RES.length > 0) {
-                for (const { _id, count } of RES) {
+            if (PAYLOAD.length > 0) {
+                for (const { _id, count } of PAYLOAD) {
                     data[_id] = count
                 }
                 data["total"] = data["positive"] + data["negative"];
@@ -49,7 +54,7 @@ export default function Home() {
         }
         else if (ID === "LINE") {
             const array = []
-            for (const { _id, sentiments } of RES) {
+            for (const { _id, sentiments } of PAYLOAD) {
                 const object = {
                     category: _id,
                     positive: 0,
@@ -66,8 +71,23 @@ export default function Home() {
             SetLine(arr);
         }
         else if (ID === "BAR&TREE") {
-            SetBarAndTree(dataPreProcess(RES));
+            SetBarAndTree(dataPreProcess(PAYLOAD));
         }
+        else if (ID === "WORDCLOUD") {
+            const data = PAYLOAD.map(obj => {
+                return {
+                    ...obj,
+                    named_entities: typeof obj.named_entities === "string" ? obj.named_entities.includes(",") ? obj.named_entities.split(",") : [obj.named_entities] : Array.isArray(obj.named_entities) ? obj.named_entities : Object.keys(obj.named_entities),
+                    topic_modeling: typeof obj.topic_modeling === "string" ? obj.topic_modeling.includes(",") ? obj.topic_modeling.split(",") : [obj.topic_modeling] : Array.isArray(obj.topic_modeling) ? obj.topic_modeling : Object.keys(obj.topic_modeling)
+                }
+            })
+            SetNER_WC([... new Set(data.map(({ named_entities }) => named_entities).flat())]);
+            SetTM_WC([... new Set(data.map(({ topic_modeling }) => topic_modeling).flat())])
+        }
+        else if (ID === "ALLNEWS") {
+            SetALLNEWS(dataPreProcess(PAYLOAD))
+        }
+
     }
 
     function NOT_RENDER(ID) {
@@ -79,6 +99,13 @@ export default function Home() {
         }
         else if (ID === "BAR&TREE") {
             SetBarAndTree("\"Oops! Can't show the view right now. Try again later!\"");
+        }
+        else if (ID === "WORDCLOUD") {
+            SetNER_WC("\"Oops! Can't show the view right now. Try again later!\"")
+            SetTM_WC("\"Oops! Can't show the view right now. Try again later!\"")
+        }
+        else if (ID === "ALLNEWS") {
+            SetALLNEWS("\"Oops! Can't show the view right now. Try again later!\"");
         }
     }
 
@@ -143,6 +170,7 @@ export default function Home() {
                     'Content-Type': 'application/json'
                 },
                 data: {
+                    id: "LATESTNEWS",
                     database: "InsightFeed",
                     collection: "news",
                     filter: {
@@ -297,7 +325,7 @@ export default function Home() {
             </div>
 
 
-            {/* Dashboard */}
+            {/* Summary Dashboard */}
             <div className="w3-margin-top w3-row-padding">
 
                 <div className="w3-third w3-margin-bottom">
@@ -339,15 +367,16 @@ export default function Home() {
                 <Tooltip anchorSelect=".negative-count" place="top">Feeling negative</Tooltip>
             </div>
 
-            {/* Latest News Swiper  */}
+
             <>
+                {/* Latest News Swiper  */}
                 {
                     latestNews ? <Slides latestNews={latestNews} /> : <Loader />
                 }
             </>
 
-            {/* Line Chart - Sentiments  */}
             <>
+                {/* Line Chart - Sentiments  */}
                 {
                     typeof Line === "string" ?
                         (
@@ -358,43 +387,112 @@ export default function Home() {
                             </div>
                         )
                         :
-                        Line && BarAndTree &&
-                        (
-                            <div className="w3-margin-top">
-                                <div className="svg-container hide-scrollbar" style={{ overflow: "hidden" }}>
-                                    <LineSentiment data={Line} fromDate={fromDate} toDate={toDate} news={BarAndTree} />
+                        Line && BarAndTree ?
+                            (
+                                <div className="w3-margin-top">
+                                    <div className="svg-container hide-scrollbar" style={{ overflow: "hidden" }}>
+                                        <LineSentiment data={Line} fromDate={fromDate} toDate={toDate} news={BarAndTree} />
+                                    </div>
                                 </div>
-                            </div>
-                        )
-                }
-                {
-                    !Line && <Loader />
+                            )
+                            :
+                            <Loader />
                 }
             </>
 
             <>
+                {/* ALL News View  */}
                 {
-                    BarAndTree ?
+                    typeof ALLNEWS === "string" ?
                         (
                             <div className="w3-margin-top">
-                                <div className="svg-container">
-                                    <BarSentimentNested news={BarAndTree} fromDate={fromDate} toDate={toDate} />
-                                </div>
+                                <p className="w3-text-red w3-large w3-padding-32 w3-center" style={{ fontWeight: "bold" }}>
+                                    <i className="w3-hover-text-black">{ALLNEWS}</i>
+                                </p>
+                            </div>
+                        )
+                        :
+                        ALLNEWS ?
+                            <ALLNewsView data={ALLNEWS} />
+                            :
+                            <Loader />
+                }
+            </>
 
-                                <div className="w3-padding w3-border">
+            <>
+                {/* Word Cloud - Named Entity Recognition  */}
+                {
+                    typeof NER_WC === "string" ?
+                        (
+                            <div className="w3-margin-top">
+                                <p className="w3-text-red w3-large w3-padding-32 w3-center" style={{ fontWeight: "bold" }}>
+                                    <i className="w3-hover-text-black">{NER_WC}</i>
+                                </p>
+                            </div>
+                        )
+                        :
+                        NER_WC ?
+                            (
+                                <div className="w3-margin-top w3-border">
                                     <div className="scrollable-container">
                                         <div className="svg-container">
-                                            <Tree news={BarAndTree} fromDate={fromDate} toDate={toDate} />
+                                            <NERWordCloud data={NER_WC} fromDate={fromDate} toDate={toDate} />
                                         </div>
                                     </div>
                                 </div>
+                            )
+                            :
+                            <Loader />
+                }
+            </>
 
+            <>
+                {/* Word Cloud - Topic Modeling  */}
+                {
+                    typeof TM_WC === "string" ?
+                        (
+                            <div className="w3-margin-top">
+                                <p className="w3-text-red w3-large w3-padding-32 w3-center" style={{ fontWeight: "bold" }}>
+                                    <i className="w3-hover-text-black">{TM_WC}</i>
+                                </p>
+                            </div>
+                        )
+                        :
+                        TM_WC ?
+                            (
+                                <div className="w3-margin-top w3-border">
+                                    <div className="scrollable-container">
+                                        <div className="svg-container">
+                                            <TMWordCloud data={TM_WC} fromDate={fromDate} toDate={toDate} />
+                                        </div>
+                                    </div>
+                                </div>
+                            )
+                            :
+                            <Loader />
+                }
+            </>
+
+            {/* Tree Chart  */}
+            <>
+                {
+                    BarAndTree ?
+                        (
+                            <div className="w3-margin-top w3-border">
+                                <div className="scrollable-container">
+                                    <div className="svg-container">
+                                        <Tree news={BarAndTree} fromDate={fromDate} toDate={toDate} />
+                                    </div>
+                                </div>
                             </div>
                         )
                         :
                         <Loader />
                 }
             </>
+
+
+
             <div className="w3-padding-32"></div>
         </div>
     )

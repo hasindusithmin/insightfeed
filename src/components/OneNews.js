@@ -1,37 +1,14 @@
-import { EffectCards } from 'swiper/modules';
-import { Swiper, SwiperSlide } from 'swiper/react';
-import moment from 'moment';
-import { Tooltip } from 'react-tooltip'
-import Swal from 'sweetalert2';
-import { useState } from 'react';
-import axios from 'axios';
-import { PythonAPI } from '../lib/config';
-import nlp from "compromise/three";
+import { useState } from "react";
+import Swal from "sweetalert2";
+import { PythonAPI } from "../lib/config";
+import axios from "axios";
+import { Tooltip } from "react-tooltip";
+import moment from "moment";
 import ReactDOMServer from 'react-dom/server';
-import Quora from './modal-templates/Quora';
+import Quora from "./modal-templates/Quora";
+import nlp from "compromise/three";
 
-export default function Slides({ latestNews: data }) {
-
-    return (
-        <div className='w3-padding-large'>
-            <Swiper
-                effect={'cards'}
-                grabCursor={true}
-                modules={[EffectCards]}
-            >
-                {
-                    data.map(object => (
-                        <SwiperSlide key={object['_id']} className='w3-light-grey'>
-                            <Card key={object._id} object={object} />
-                        </SwiperSlide>
-                    ))
-                }
-            </Swiper>
-        </div >
-    );
-}
-
-export function Card({ object }) {
+export function OneNews({ object }) {
 
     const Toast = Swal.mixin({
         toast: true,
@@ -49,6 +26,7 @@ export function Card({ object }) {
     const entities = typeof named_entities === "string" ? named_entities.includes(",") ? named_entities.split(",") : [named_entities] : Array.isArray(named_entities) ? named_entities : Object.keys(named_entities);
     const topics = typeof topic_modeling === "string" ? topic_modeling.includes(",") ? topic_modeling.split(",") : [topic_modeling] : Array.isArray(topic_modeling) ? topic_modeling : Object.keys(topic_modeling);
     const [startSearch, setStartSearch] = useState(false);
+
     const getMoreNews = () => {
         setStartSearch(true);
         const options = {
@@ -125,7 +103,7 @@ export function Card({ object }) {
             })
     }
 
-    const [Entity, SetEntity] = useState("Entity");
+    const [Entity, SetEntity] = useState("");
 
     function getEntity(word) {
         const doc = nlp(word);
@@ -134,15 +112,15 @@ export function Card({ object }) {
         let organizations = doc.organizations().normalize().text();
         let acronyms = doc.acronyms().normalize().text();
         if (people)
-            SetEntity("Person")
+            return "Person"
         else if (place)
-            SetEntity("Place")
+            return "Place"
         else if (organizations)
-            SetEntity("Organization")
+            return "Organization"
         else if (acronyms)
-            SetEntity("Acronyms")
+            return "Acronyms"
         else
-            SetEntity("Entity")
+            return "Entity"
     }
 
     const PREX = "_button";
@@ -189,7 +167,7 @@ export function Card({ object }) {
     }
 
     return (
-        <div className="scrollable-container w3-round-xlarge w3-panel w3-padding" style={{ margin: '10px 5px' }}>
+        <div className="scrollable-container w3-card w3-round-large w3-panel w3-padding" style={{ margin: '5px 5px' }}>
             <div className='w3-large'>
                 <span className='sentiment'>{sentiment === "positive" ? <i className="fa fa-smile-o" style={{ color: "green" }}></i> : <i className="fa fa-frown-o" style={{ color: "red" }}></i>}</span>&nbsp;&nbsp;<span className='category w3-opacity' style={{ fontWeight: "bold" }}>{toCapitalize(category)} News</span>
             </div>
@@ -215,7 +193,7 @@ export function Card({ object }) {
                         style={{ margin: '5px', cursor: "default" }}
                         className="w3-large w3-button w3-padding-small w3-grey w3-round-large w3-text-white w3-hover-text-black"
                     >
-                        <span className='entity' style={{ cursor: "pointer" }}><i className="fa fa-info-circle" aria-hidden="true" onMouseOver={() => { getEntity(entity) }}></i></span>&nbsp;{entity}
+                        <span className='entity' data-tooltip-content={getEntity(entity)} style={{ cursor: "pointer" }}><i className="fa fa-info-circle" aria-hidden="true"></i></span>&nbsp;{entity}
                     </button>
                 ))}
             </div>
@@ -236,7 +214,7 @@ export function Card({ object }) {
                     <i className="fa fa-clock-o" aria-hidden="true"></i> {moment(timestamp).format('MMM Do YYYY, h:mm A')}
                 </span>
             </div>
-            <hr />
+            <br />
             <div className="w3-padding w3-center w3-large">
                 <button style={{ cursor: "default" }} className='w3-button w3-blue-grey w3-opacity-min w3-text-white w3-round-xlarge' onClick={getMoreNews} disabled={startSearch}>
                     {startSearch ? <span className='search'><i className="w3-spin fa fa-spinner"></i></span> : <span className='more'><i className="fa fa-info-circle" style={{ cursor: "pointer" }}></i></span>} Explore More
@@ -248,9 +226,7 @@ export function Card({ object }) {
             <Tooltip anchorSelect=".sentiment" place="top">
                 {sentiment === "positive" ? "Feeling is good" : "Feeling is not so good"}
             </Tooltip>
-            <Tooltip anchorSelect=".entity" place="top">
-                {Entity}
-            </Tooltip>
+            <Tooltip anchorSelect=".entity" place="top" render={({ content }) => content} />
             <Tooltip anchorSelect=".topic" place="top">
                 Explore Quora Q&A: Click here
             </Tooltip>

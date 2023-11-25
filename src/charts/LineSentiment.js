@@ -6,7 +6,7 @@ export default function LineSentiment({ data, fromDate, toDate, news }) {
     data.sort((a, b) => a.category.localeCompare(b.category))
     const option = {
         title: {
-            text: 'InsightFeed',
+            text: 'Sentiment Analysis',
             subtext: `From ${moment(fromDate).format('MMM Do YYYY, h:mm A')} To ${moment(toDate).format('MMM Do YYYY, h:mm A')}`,
             left: 'left'
         },

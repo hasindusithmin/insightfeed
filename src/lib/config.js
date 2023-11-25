@@ -23,6 +23,27 @@ exports.dataPreProcess = (rawData) => {
 exports.getAxiosOptions = (dateFrom, dateTo) => {
     return [
         {
+            type: "ALLNEWS",
+            url: exports.NodeAPI + "/getSortedDocumentsWithGroupBy",
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            data: {
+                id: "ALLNEWS",
+                database: "InsightFeed",
+                collection: "news",
+                filter: {
+                    "analyzed": true,
+                    "timestamp": { "$gte": dateFrom },
+                    "sentiment": { "$ne": null }
+                },
+                sort: { "timestamp": -1 },
+                group: "category",
+                limit: 20
+            }
+        },
+        {
             type: "COUNTS",
             url: exports.NodeAPI + "/getSortedDocumentsWithGroupBy",
             method: 'POST',
@@ -78,6 +99,29 @@ exports.getAxiosOptions = (dateFrom, dateTo) => {
                 },
                 sort: { "timestamp": -1 },
                 group: "category"
+            }
+        },
+        {
+            type: "WORDCLOUD",
+            url: exports.NodeAPI + "/getDocuments",
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            data: {
+                id: "WORDCLOUD",
+                database: "InsightFeed",
+                collection: "news",
+                filter: {
+                    "analyzed": true,
+                    "sentiment": { "$ne": null },
+                    "timestamp": { "$gte": dateFrom, "$lte": dateTo },
+                },
+                projection: {
+                    "named_entities": 1,
+                    "topic_modeling": 1
+                },
+                sort: { "timestamp": -1 },
             }
         }
     ]
