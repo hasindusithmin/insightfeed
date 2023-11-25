@@ -18,7 +18,7 @@ export default function ALLNews({ data: arr }) {
     const raw = groupByNumber(arr, 2);
     return (
         <div className="">
-            <div className="w3-padding w3-xlarge w3-opacity"><b>Top 100 News</b></div>
+            <div className="w3-padding w3-xlarge w3-opacity"><b>Latest 100 News Updates</b></div>
             {
                 raw.map((twoD, Index) => (
                     <div key={Index} className="w3-row">

@@ -35,12 +35,11 @@ exports.getAxiosOptions = (dateFrom, dateTo) => {
                 collection: "news",
                 filter: {
                     "analyzed": true,
-                    "timestamp": { "$gte": dateFrom },
                     "sentiment": { "$ne": null }
                 },
                 sort: { "timestamp": -1 },
                 group: "category",
-                limit: 20
+                limit: 100
             }
         },
         {
