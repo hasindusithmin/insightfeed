@@ -117,6 +117,7 @@ exports.getAxiosOptions = (dateFrom, dateTo) => {
                     "timestamp": { "$gte": dateFrom, "$lte": dateTo },
                 },
                 projection: {
+                    "sentiment": 1,
                     "named_entities": 1,
                     "topic_modeling": 1
                 },

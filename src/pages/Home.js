@@ -81,8 +81,9 @@ export default function Home() {
                     topic_modeling: typeof obj.topic_modeling === "string" ? obj.topic_modeling.includes(",") ? obj.topic_modeling.split(",") : [obj.topic_modeling] : Array.isArray(obj.topic_modeling) ? obj.topic_modeling : Object.keys(obj.topic_modeling)
                 }
             })
-            SetNER_WC([... new Set(data.map(({ named_entities }) => named_entities).flat())]);
-            SetTM_WC([... new Set(data.map(({ topic_modeling }) => topic_modeling).flat())])
+            // SetNER_WC([... new Set(data.map(({ named_entities }) => named_entities).flat())]);
+            SetNER_WC(data);
+            SetTM_WC(data)
         }
         else if (ID === "ALLNEWS") {
             SetALLNEWS(dataPreProcess(PAYLOAD))
