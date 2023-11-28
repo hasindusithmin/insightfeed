@@ -166,7 +166,7 @@ export function OneNews({ object }) {
     }
 
     return (
-        <div className="scrollable-container w3-card w3-round-large w3-panel w3-padding" style={{ margin: '5px 5px' }}>
+        <div className="w3-card w3-round-large w3-panel w3-padding" style={{ margin: '10px 5px' }}>
             <div className='w3-large'>
                 <span className='sentiment'>{sentiment === "positive" ? <i className="fa fa-smile-o" style={{ color: "green" }}></i> : <i className="fa fa-frown-o" style={{ color: "red" }}></i>}</span>&nbsp;&nbsp;<span className='category w3-opacity' style={{ fontWeight: "bold" }}>{toCapitalize(category)} News</span>
             </div>

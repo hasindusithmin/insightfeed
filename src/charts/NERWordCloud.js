@@ -3,10 +3,27 @@ import 'echarts-wordcloud';
 import ReactEcharts from "echarts-for-react"
 import nlp from "compromise/three";
 import { useEffect, useState } from "react";
+import { NodeAPI } from "../lib/config";
+import axios from "axios";
+import { OneNews } from "../components/OneNews";
+import Swal from "sweetalert2";
+import Rodal from "rodal";
 
 export default function NERWordCloud({ data, fromDate, toDate }) {
 
     const [options, setOptions] = useState(null);
+
+    const Toast = Swal.mixin({
+        toast: true,
+        position: "top-end",
+        showConfirmButton: false,
+        timer: 1000,
+        timerProgressBar: true,
+        didOpen: (toast) => {
+            toast.onmouseenter = Swal.stopTimer;
+            toast.onmouseleave = Swal.resumeTimer;
+        }
+    });
 
     function getOptions(array, type) {
         return {
@@ -107,9 +124,43 @@ export default function NERWordCloud({ data, fromDate, toDate }) {
             return "Entity"
     }
 
+    const [news, setNews] = useState([]);
+
     const onEvents = {
         click: ({ name }) => {
-            console.log(data.length);
+            Toast.fire({
+                icon: "info",
+                title: "Please Wait..."
+            });
+            const opts = {
+                url: NodeAPI + "/getDocuments",
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                data: {
+                    database: "InsightFeed",
+                    collection: "news",
+                    filter: {
+                        "analyzed": true,
+                        "sentiment": { "$ne": null },
+                        "timestamp": { "$gte": fromDate, "$lte": toDate },
+                        "named_entities": { "$in": [name] }
+                    },
+                    sort: { "timestamp": -1 },
+                }
+            }
+            axios(opts)
+                .then(res => {
+                    const news = res.data;
+                    setNews(news)
+                })
+                .catch(error => {
+                    Toast.fire({
+                        icon: "info",
+                        title: "Oops! No matching data found"
+                    });
+                })
         }
     }
 
@@ -125,6 +176,13 @@ export default function NERWordCloud({ data, fromDate, toDate }) {
                     onEvents={onEvents}
                 />
             }
+            <Rodal visible={news.length > 0} onClose={() => { setNews([]) }} height={550} >
+                <div className="scrollable-container">
+                    {
+                        news.map(object => <OneNews key={object.id} object={object} />)
+                    }
+                </div>
+            </Rodal>
         </>
     )
 }

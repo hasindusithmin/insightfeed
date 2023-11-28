@@ -4,6 +4,8 @@ import './index.css';
 import App from './App';
 import 'swiper/css';
 import 'swiper/css/effect-cards';
+import 'rodal/lib/rodal.css';
+
 import reportWebVitals from './reportWebVitals';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
