@@ -40,7 +40,7 @@ exports.getAxiosOptions = (dateFrom, dateTo) => {
                 },
                 sort: { "timestamp": -1 },
                 group: "category",
-                limit: 250
+                limit: 150
             }
         },
         {
