@@ -151,7 +151,6 @@ export default function Home() {
                     setDisbleFilter(false);
                 }
             })
-
     }
 
     useEffect(() => {
@@ -235,6 +234,7 @@ export default function Home() {
             preDeny: () => {
                 const newFrom = moment().startOf("day").valueOf(), newTo = moment().valueOf();
                 const promiseFunctionList = getPromiseFunctionList(newFrom, newTo);
+                SetALLNEWS(null); SetNER_WC(null); SetTM_WC(null);
                 return getData(0, newFrom, newTo, promiseFunctionList);
             },
             preConfirm: () => {
@@ -286,6 +286,7 @@ export default function Home() {
                 }
                 const newFrom = M_from.valueOf(), newTo = M_to.valueOf();
                 const promiseFunctionList = getPromiseFunctionList(newFrom, newTo);
+                SetALLNEWS(null); SetNER_WC(null); SetTM_WC(null);
                 return getData(0, newFrom, newTo, promiseFunctionList);
             }
         });
@@ -414,38 +415,37 @@ export default function Home() {
                         )
                         :
                         ALLNEWS ?
-                            <ALLNewsView data={ALLNEWS} />
+                            <ALLNewsView data={ALLNEWS} fromDate={fromDate} toDate={toDate} />
                             :
                             <Loader />
                 }
             </>
 
-            <>
-                {/* Word Cloud - Named Entity Recognition  */}
-                {
-                    typeof NER_WC === "string" ?
+            {/* Word Cloud - Named Entity Recognition  */}
+            {
+                typeof NER_WC === "string" ?
+                    (
+                        <div className="w3-margin-top">
+                            <p className="w3-text-red w3-large w3-padding-32 w3-center" style={{ fontWeight: "bold" }}>
+                                <i className="w3-hover-text-black">{NER_WC}</i>
+                            </p>
+                        </div>
+                    )
+                    :
+                    NER_WC ?
                         (
-                            <div className="w3-margin-top">
-                                <p className="w3-text-red w3-large w3-padding-32 w3-center" style={{ fontWeight: "bold" }}>
-                                    <i className="w3-hover-text-black">{NER_WC}</i>
-                                </p>
+                            <div className="w3-margin-top w3-border">
+                                <div className="scrollable-container">
+                                    <div className="svg-container">
+                                        <NERWordCloud data={NER_WC} fromDate={fromDate} toDate={toDate} />
+                                    </div>
+                                </div>
                             </div>
                         )
                         :
-                        NER_WC ?
-                            (
-                                <div className="w3-margin-top w3-border">
-                                    <div className="scrollable-container">
-                                        <div className="svg-container">
-                                            <NERWordCloud data={NER_WC} fromDate={fromDate} toDate={toDate} />
-                                        </div>
-                                    </div>
-                                </div>
-                            )
-                            :
-                            <Loader />
-                }
-            </>
+                        <Loader />
+            }
+
 
             <>
                 {/* Word Cloud - Topic Modeling  */}
@@ -480,7 +480,7 @@ export default function Home() {
                     BarAndTree ?
                         (
                             <div className="w3-margin-top w3-border">
-                                <div className="scrollable-container">
+                                <div className="">
                                     <div className="svg-container">
                                         <Tree news={BarAndTree} fromDate={fromDate} toDate={toDate} />
                                     </div>

@@ -78,10 +78,10 @@ export default function TMWordCloud({ data, fromDate, toDate }) {
             series: [
                 {
                     type: 'wordCloud',
-                    shape: 'circle',
+                    shape: 'square',
                     width: "95%",
-                    // height: "100%",
-                    sizeRange: [15, 30],
+                    height: "80%",
+                    sizeRange: [15, 16],
                     rotationRange: [0, 0],
                     // rotationStep: 90,
                     gridSize: 10,
@@ -104,8 +104,6 @@ export default function TMWordCloud({ data, fromDate, toDate }) {
             getOptions([...new Set(data.map(({ topic_modeling }) => topic_modeling).flat())], "")
         )
     }, [])
-
-    const n = data.length >= 250 ? 2 : 5;
 
     const [news, setNews] = useState([]);
 
@@ -153,7 +151,7 @@ export default function TMWordCloud({ data, fromDate, toDate }) {
                 options &&
                 <ReactEcharts
                     option={options}
-                    style={{ width: "100%", height: data.length * n, backgroundColor: "#f1f1f1" }}
+                    style={{ width: "100%", height: data.length * 2 + 250, backgroundColor: "#f1f1f1" }}
                     onEvents={onEvents}
                 />
             }

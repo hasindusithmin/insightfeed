@@ -1,4 +1,5 @@
 import { OneNews } from "./OneNews";
+import moment from "moment";
 
 function groupByNumber(array, groupSize) {
     return array.reduce((result, current, index) => {
@@ -14,11 +15,17 @@ function groupByNumber(array, groupSize) {
     }, []);
 }
 
-export default function ALLNews({ data: arr }) {
+export default function ALLNews({ data: arr, fromDate, toDate }) {
     const raw = groupByNumber(arr, 2);
     return (
         <div className="">
-            <div className="w3-padding w3-xlarge w3-opacity"><b>Latest 100 News Updates</b></div>
+            <div className="w3-padding w3-xlarge w3-opacity">
+                <b>News Updates</b>
+                <br/>
+                <span className="w3-medium">
+                 From {moment(fromDate).format('MMM Do YYYY, h:mm A')} To {moment(toDate).format('MMM Do YYYY, h:mm A')} 
+                </span>
+            </div>
             {
                 raw.map((twoD, Index) => (
                     <div key={Index} className="w3-row">

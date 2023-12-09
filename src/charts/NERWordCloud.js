@@ -79,10 +79,10 @@ export default function NERWordCloud({ data, fromDate, toDate }) {
             series: [
                 {
                     type: 'wordCloud',
-                    shape: 'circle',
+                    shape: 'square',
                     width: "95%",
-                    // height: "90%",
-                    sizeRange: [15, 30],
+                    height: "80%",
+                    sizeRange: [15, 16],
                     rotationRange: [0, 0],
                     // rotationStep: 90,
                     gridSize: 10,
@@ -164,15 +164,13 @@ export default function NERWordCloud({ data, fromDate, toDate }) {
         }
     }
 
-    const n = data.length >= 250 ? 2 : 5;
-
     return (
         <>
             {
                 options &&
                 <ReactEcharts
                     option={options}
-                    style={{ width: "100%", height: data.length * n, backgroundColor: "#f1f1f1" }}
+                    style={{ width: "100%", height: data.length * 2 + 250, backgroundColor: "#f1f1f1" }}
                     onEvents={onEvents}
                 />
             }
