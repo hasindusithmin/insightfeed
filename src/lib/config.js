@@ -38,7 +38,7 @@ exports.getAxiosOptions = (dateFrom, dateTo) => {
                     "sentiment": { "$ne": null },
                     "timestamp": { "$gte": dateFrom, "$lte": dateTo },
                 },
-                sort: { "timestamp": -1 },
+                sort: { "timestamp": 1 },
                 group: "category",
                 limit: 150
             }
