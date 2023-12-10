@@ -171,7 +171,7 @@ export default function NERWordCloud({ data, fromDate, toDate }) {
                 options &&
                 <ReactEcharts
                     option={options}
-                    style={{ width: "100%", height: data.length * 2 + 250, backgroundColor: "#f1f1f1" }}
+                    style={{ width: "100%", height: data.length * 2 + 300, backgroundColor: "#f1f1f1" }}
                     onEvents={onEvents}
                 />
             }

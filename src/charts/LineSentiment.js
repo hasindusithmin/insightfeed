@@ -1,8 +1,11 @@
 
 import ReactEcharts from "echarts-for-react"
 import moment from "moment";
-import { showCategorizeNews } from "../lib/config";
+import Rodal from "rodal";
+import { OneNews } from "../components/OneNews";
+import { useState } from "react";
 export default function LineSentiment({ data, fromDate, toDate, news }) {
+    const [relatedNews, setRelatedNews] = useState([])
     data.sort((a, b) => a.category.localeCompare(b.category))
     const option = {
         title: {
@@ -105,17 +108,24 @@ export default function LineSentiment({ data, fromDate, toDate, news }) {
         click: ({ name: category, seriesId: sentiment }) => {
             const { data } = news.find(({ _id }) => _id === category);
             const filteredData = sentiment === "total" ? data : data.filter(object => object.sentiment === sentiment);
-            const icon = sentiment === "total" ? "" : sentiment === "positive" ? "<i style=\"color:green\" class=\"fa fa-smile-o\" title=\"positive\"></i>" : "<i style=\"color:red\" class=\"fa fa-frown-o\" title=\"negative\"></i>"
-            const title = `${category} ${icon}`;
-            showCategorizeNews(title, filteredData);
+            setRelatedNews(filteredData);
         }
     }
 
     return (
-        <ReactEcharts
-            option={option}
-            style={{ width: 1000, height: 500 }}
-            onEvents={onEvents}
-        />
+        <>
+            <ReactEcharts
+                option={option}
+                style={{ width: 1000, height: 500 }}
+                onEvents={onEvents}
+            />
+            <Rodal visible={relatedNews.length > 0} onClose={() => { setRelatedNews([]) }} height={550} >
+                <div className="scrollable-container">
+                    {
+                        relatedNews.map(object => <OneNews key={object.id} object={object} />)
+                    }
+                </div>
+            </Rodal>
+        </>
     )
 }

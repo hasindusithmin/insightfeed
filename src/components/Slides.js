@@ -125,8 +125,6 @@ export function Card({ object }) {
             })
     }
 
-    const [Entity, SetEntity] = useState("Entity");
-
     function getEntity(word) {
         const doc = nlp(word);
         let people = doc.people().normalize().text();
@@ -134,15 +132,15 @@ export function Card({ object }) {
         let organizations = doc.organizations().normalize().text();
         let acronyms = doc.acronyms().normalize().text();
         if (people)
-            SetEntity("Person")
+            return "Person"
         else if (place)
-            SetEntity("Place")
+            return "Place"
         else if (organizations)
-            SetEntity("Organization")
+            return "Organization"
         else if (acronyms)
-            SetEntity("Acronyms")
+            return "Acronyms"
         else
-            SetEntity("Entity")
+            return "Entity"
     }
 
     const PREX = "_button";
@@ -191,7 +189,7 @@ export function Card({ object }) {
     return (
         <div className="scrollable-container w3-round-xlarge w3-panel w3-padding" style={{ margin: '10px 5px' }}>
             <div className='w3-large'>
-                <span className='sentiment'>{sentiment === "positive" ? <i className="fa fa-smile-o" style={{ color: "green" }}></i> : <i className="fa fa-frown-o" style={{ color: "red" }}></i>}</span>&nbsp;&nbsp;<span className='category w3-opacity' style={{ fontWeight: "bold" }}>{toCapitalize(category)} News</span>
+                <span className='sentiment' data-tooltip-content={sentiment === "positive" ? "Feeling is good" : "Feeling is not so good"}>{sentiment === "positive" ? <i className="fa fa-smile-o" style={{ color: "green" }}></i> : <i className="fa fa-frown-o" style={{ color: "red" }}></i>}</span>&nbsp;&nbsp;<span className='category w3-opacity' style={{ fontWeight: "bold" }}>{toCapitalize(category)} News</span>
             </div>
             <div className="w3-large" style={{ fontWeight: 'bold', marginTop: 5 }}>
                 {title}
@@ -215,7 +213,7 @@ export function Card({ object }) {
                         style={{ margin: '5px', cursor: "default" }}
                         className="w3-large w3-button w3-padding-small w3-grey w3-round-large w3-text-white w3-hover-text-black"
                     >
-                        <span className='entity' style={{ cursor: "pointer" }}><i className="fa fa-info-circle" aria-hidden="true" onMouseOver={() => { getEntity(entity) }}></i></span>&nbsp;{entity}
+                        <span data-tooltip-content={getEntity(entity)} className='entity' style={{ cursor: "pointer" }}><i className="fa fa-info-circle" aria-hidden="true" onMouseOver={() => { getEntity(entity) }}></i></span>&nbsp;{entity}
                     </button>
                 ))}
             </div>
@@ -242,15 +240,11 @@ export function Card({ object }) {
                     {startSearch ? <span className='search'><i className="w3-spin fa fa-spinner"></i></span> : <span className='more'><i className="fa fa-info-circle" style={{ cursor: "pointer" }}></i></span>} Explore More
                 </button>
             </div>
-            <Tooltip anchorSelect=".category" place="top">
+            <Tooltip anchorSelect=".category" place="bottom">
                 Category
             </Tooltip>
-            <Tooltip anchorSelect=".sentiment" place="top">
-                {sentiment === "positive" ? "Feeling is good" : "Feeling is not so good"}
-            </Tooltip>
-            <Tooltip anchorSelect=".entity" place="top">
-                {Entity}
-            </Tooltip>
+            <Tooltip anchorSelect=".sentiment" place="bottom" render={({ content }) => content} />
+            <Tooltip anchorSelect=".entity" place="top" render={({ content }) => content} />
             <Tooltip anchorSelect=".topic" place="top">
                 Explore Quora Q&A: Click here
             </Tooltip>

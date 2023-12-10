@@ -182,18 +182,25 @@ export default function Home() {
                         "timestamp": { "$gte": dateFrom, "$lte": dateTo }
                     },
                     sort: { "timestamp": -1 },
-                    limit: 20
+                    limit: 30
                 }
             };
             axios(options)
                 .then(res => {
-                    if (res.data.length < 10) {
+                    if (res.data.length < 15) {
+                        Toast.fire({
+                            icon: "info",
+                            title: "Oops! Not enough news from today's midnight. Fetching more with an updated date..."
+                        });
                         const recommendedDateFrom = moment().startOf("day").subtract(6, 'hours').valueOf();
                         getLatestNews(0, recommendedDateFrom, dateTo);
                     } else {
                         setLatestNews(res.data);
                         const promiseFunctionList = getPromiseFunctionList(dateFrom, dateTo);
                         getData(0, dateFrom, dateTo, promiseFunctionList);
+                        setTimeout(()=>{
+                            Toast.close()
+                        },1000)
                     }
                 })
                 .catch(err => {
@@ -210,20 +217,23 @@ export default function Home() {
     }, [])
 
     const showFilter = (position = "center") => {
+        if (!fromDate && !toDate) {
+            return
+        }
         Swal.fire({
-            title: "<i class=\"fa fa-calendar\" aria-hidden=\"true\"></i> DATE FILTER",
+            title: "Choose Date Range",
             customClass: {
-                title: "w3-xlarge",
+                title: "w3-large",
                 htmlContainer: "w3-container",
                 confirmButton: "w3-green",
                 denyButton: "w3-red"
             },
             position: position,
             html: `
-                <label class="w3-left">From Date</label>
+                <label class="w3-left">Date From</label>
                 <input type="text" id="from-date" class="w3-input w3-border" value="${moment(fromDate).format('YYYY-MMM-DD h:mm A')}" placeholder="YYYY-MMM-DD h:mm A">
                 <br>
-                <label class="w3-left">To Date</label>
+                <label class="w3-left">Date To</label>
                 <input type="text" id="to-date" class="w3-input w3-border" value="${moment(toDate).format('YYYY-MMM-DD h:mm A')}" placeholder="YYYY-MMM-DD h:mm A">
           `,
             showCloseButton: true,
