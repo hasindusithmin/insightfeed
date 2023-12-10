@@ -133,10 +133,11 @@ export default function TMWordCloud({ data, fromDate, toDate }) {
             }
             axios(opts)
                 .then(res => {
-                    const news = res.data;
-                    setNews(news)
+                    Toast.close();
+                    setNews(res.data)
                 })
                 .catch(error => {
+                    Toast.close();
                     Toast.fire({
                         icon: "info",
                         title: "Oops! No matching data found"

@@ -13,6 +13,8 @@ import LineSentiment from "../charts/LineSentiment";
 import NERWordCloud from "../charts/NERWordCloud";
 import TMWordCloud from "../charts/TMWordCloud";
 import ALLNewsView from "../components/ALLNews";
+import { OneNews } from "../components/OneNews";
+import Rodal from "rodal";
 
 export default function Home() {
     let run = true; //don't remove
@@ -21,7 +23,7 @@ export default function Home() {
         toast: true,
         position: "top-end",
         showConfirmButton: false,
-        timer: 5000,
+        timer: 3000,
         timerProgressBar: true,
         didOpen: (toast) => {
             toast.onmouseenter = Swal.stopTimer;
@@ -294,6 +296,46 @@ export default function Home() {
 
     const [showAnimate, setShowAnimate] = useState(false);
 
+    const [news, setNews] = useState([]);
+    const getNews = (event) => {
+        const sentiment = event.target.id === "total" ? null : event.target.id;
+        if (fromDate && toDate) {
+            Toast.fire({
+                icon: "info",
+                title: "Please Wait..."
+            });
+            const opts = {
+                url: NodeAPI + "/getDocuments",
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                data: {
+                    database: "InsightFeed",
+                    collection: "news",
+                    filter: {
+                        "analyzed": true,
+                        "sentiment": { "$ne": sentiment },
+                        "timestamp": { "$gte": fromDate, "$lte": toDate },
+                    },
+                    sort: { "timestamp": -1 },
+                }
+            }
+            axios(opts)
+                .then(res => {
+                    Toast.close();
+                    setNews(res.data)
+                })
+                .catch(error => {
+                    Toast.close();
+                    Toast.fire({
+                        icon: "info",
+                        title: "Oops! something went wrong"
+                    });
+                })
+        }
+    }
+
     return (
         <div className="w3-content w3-panel">
 
@@ -337,9 +379,9 @@ export default function Home() {
                         </div>
                         <div className="w3-clear" />
                         <h4>
-                            <span><i style={{ fontWeight: "bold" }} className="fa fa-rss-square total-count w3-text-blue-grey" /> {analytics["total"] ? <span>{analytics["total"]}</span> : <i className="w3-spin fa fa-circle-o-notch"></i>}</span>&nbsp;
-                            <span><i style={{ fontWeight: "bold" }} className="fa fa-smile-o positive-count w3-text-teal" /> {analytics["positive"] ? <span>{analytics["positive"]}</span> : <i className="w3-spin fa fa-circle-o-notch"></i>}</span>&nbsp;
-                            <span><i style={{ fontWeight: "bold" }} className="fa fa-frown-o negative-count w3-text-red" /> {analytics["negative"] ? <span>{analytics["negative"]}</span> : <i className="w3-spin fa fa-circle-o-notch"></i>}</span>
+                            <span><i id="total" style={{ fontWeight: "bold", cursor: "pointer" }} className="fa fa-rss-square total-count w3-text-blue-grey" onClick={getNews} /> {analytics["total"] ? <span>{analytics["total"]}</span> : <i className="w3-spin fa fa-circle-o-notch"></i>}</span>&nbsp;
+                            <span><i id="positive" style={{ fontWeight: "bold", cursor: "pointer" }} className="fa fa-smile-o positive-count w3-text-teal" onClick={getNews} /> {analytics["positive"] ? <span>{analytics["positive"]}</span> : <i className="w3-spin fa fa-circle-o-notch"></i>}</span>&nbsp;
+                            <span><i id="negative" style={{ fontWeight: "bold", cursor: "pointer" }} className="fa fa-frown-o negative-count w3-text-red" onClick={getNews} /> {analytics["negative"] ? <span>{analytics["negative"]}</span> : <i className="w3-spin fa fa-circle-o-notch"></i>}</span>
                         </h4>
                     </div>
                 </div>
@@ -367,6 +409,13 @@ export default function Home() {
                 <Tooltip anchorSelect=".total-count" place="top">Total news</Tooltip>
                 <Tooltip anchorSelect=".positive-count" place="top">Feeling positive</Tooltip>
                 <Tooltip anchorSelect=".negative-count" place="top">Feeling negative</Tooltip>
+                <Rodal visible={news.length > 0} onClose={() => { setNews([]) }} height={550} >
+                    <div className="scrollable-container">
+                        {
+                            news.map(object => <OneNews key={object.id} object={object} />)
+                        }
+                    </div>
+                </Rodal>
             </div>
 
 

@@ -168,7 +168,7 @@ export function OneNews({ object }) {
     return (
         <div className="w3-card w3-round-large w3-panel w3-padding" style={{ margin: '10px 5px' }}>
             <div className='w3-large'>
-                <span className='sentiment'>{sentiment === "positive" ? <i className="fa fa-smile-o" style={{ color: "green" }}></i> : <i className="fa fa-frown-o" style={{ color: "red" }}></i>}</span>&nbsp;&nbsp;<span className='category w3-opacity' style={{ fontWeight: "bold" }}>{toCapitalize(category)} News</span>
+                <span className='sentiment' data-tooltip-content={sentiment === "positive" ? "Feeling is good" : "Feeling is not so good"}>{sentiment === "positive" ? <i className="fa fa-smile-o" style={{ color: "green" }}></i> : <i className="fa fa-frown-o" style={{ color: "red" }}></i>}</span>&nbsp;&nbsp;<span className='category w3-opacity' style={{ fontWeight: "bold" }}>{toCapitalize(category)} News</span>
             </div>
             <div className="w3-large" style={{ fontWeight: 'bold', marginTop: 5 }}>
                 {title}
@@ -184,7 +184,20 @@ export function OneNews({ object }) {
                         </span>
                 }
             </div>
-            <br />
+            <div className="w3-padding w3-center">
+                <button
+                    style={{ margin: '5px', cursor: "default" }}
+                    className="w3-button w3-padding-small w3-grey w3-text-white w3-hover-text-black w3-small"
+                >
+                    <i className="fa fa-info-circle" aria-hidden="true"></i> Entity
+                </button>
+                <button
+                    style={{ margin: '5px', cursor: "default" }}
+                    className="w3-button w3-padding-small w3-dark-grey w3-hover-text-black w3-small"
+                >
+                    <i className="fa fa-info-circle" aria-hidden="true"></i> Topic
+                </button>
+            </div>
             <div className="w3-padding">
                 {entities.map((entity, index) => (
                     <button
@@ -192,7 +205,8 @@ export function OneNews({ object }) {
                         style={{ margin: '5px', cursor: "default" }}
                         className="w3-large w3-button w3-padding-small w3-grey w3-round-large w3-text-white w3-hover-text-black"
                     >
-                        <span className='entity' data-tooltip-content={getEntity(entity)} style={{ cursor: "pointer" }}><i className="fa fa-info-circle" aria-hidden="true"></i></span>&nbsp;{entity}
+                        <span className='entity' data-tooltip-content={getEntity(entity)} style={{ cursor: "pointer" }}><i className="fa fa-info-circle" aria-hidden="true"></i></span>&nbsp;
+                        <span className={entity.length > 20 ? "w3-small" : ""}>{entity}</span>
                     </button>
                 ))}
             </div>
@@ -204,7 +218,8 @@ export function OneNews({ object }) {
                         style={{ margin: '5px', cursor: "default" }}
                         className="w3-large w3-button w3-padding-small w3-dark-grey w3-round-large w3-hover-text-black"
                     >
-                        <span className='topic' style={{ cursor: "pointer" }} ><i id={topic} className="fa fa-info-circle" onClick={getQuoraResults}></i></span>&nbsp;{topic}
+                        <span className='topic' style={{ cursor: "pointer" }} ><i id={topic} className="fa fa-info-circle" onClick={getQuoraResults}></i></span>&nbsp;
+                        <span className={topic.length > 20 ? "w3-small" : ""} >{topic}</span>
                     </button>
                 ))}
             </div>
@@ -222,9 +237,7 @@ export function OneNews({ object }) {
             <Tooltip anchorSelect=".category" place="top">
                 Category
             </Tooltip>
-            <Tooltip anchorSelect=".sentiment" place="top">
-                {sentiment === "positive" ? "Feeling is good" : "Feeling is not so good"}
-            </Tooltip>
+            <Tooltip anchorSelect=".sentiment" place="top" render={({ content }) => content} />
             <Tooltip anchorSelect=".entity" place="top" render={({ content }) => content} />
             <Tooltip anchorSelect=".topic" place="top">
                 Explore Quora Q&A: Click here
