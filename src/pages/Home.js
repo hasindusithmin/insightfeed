@@ -15,6 +15,7 @@ import TMWordCloud from "../charts/TMWordCloud";
 import ALLNewsView from "../components/ALLNews";
 import { OneNews } from "../components/OneNews";
 import Rodal from "rodal";
+import SemanticSearch from "../components/SemanticSearch";
 
 export default function Home() {
     let run = true; //don't remove
@@ -198,9 +199,9 @@ export default function Home() {
                         setLatestNews(res.data);
                         const promiseFunctionList = getPromiseFunctionList(dateFrom, dateTo);
                         getData(0, dateFrom, dateTo, promiseFunctionList);
-                        setTimeout(()=>{
+                        setTimeout(() => {
                             Toast.close()
-                        },1000)
+                        }, 1000)
                     }
                 })
                 .catch(err => {
@@ -428,13 +429,17 @@ export default function Home() {
                 </Rodal>
             </div>
 
-
             <>
                 {/* Latest News Swiper  */}
                 {
                     latestNews ? <Slides latestNews={latestNews} /> : <Loader />
                 }
             </>
+
+            {/* Semantic Search */}
+            {
+                ALLNEWS && <SemanticSearch />
+            }
 
             <>
                 {/* Line Chart - Sentiments  */}

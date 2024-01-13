@@ -229,7 +229,7 @@ export function OneNews({ object }) {
                 </span>
             </div>
             <br />
-            <div className="w3-padding w3-center w3-large">
+            <div className="w3-padding-large w3-center w3-large">
                 <button style={{ cursor: "default" }} className='w3-button w3-blue-grey w3-opacity-min w3-text-white w3-round-xlarge' onClick={getMoreNews} disabled={startSearch}>
                     {startSearch ? <span className='search'><i className="w3-spin fa fa-spinner"></i></span> : <span className='more'><i className="fa fa-info-circle" style={{ cursor: "pointer" }}></i></span>} Explore More
                 </button>
