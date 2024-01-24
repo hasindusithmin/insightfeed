@@ -1,6 +1,6 @@
 import axios from "axios"
 import { useEffect, useState } from "react"
-import { NodeAPI, dataPreProcess, getAxiosOptions } from "../lib/config"
+import { NodeAPI, dataPreProcess, getAxiosOptions, dataPreProcessV2 } from "../lib/config"
 import moment from "moment"
 import Loader from "../components/Loaders";
 import Tree from "../charts/Tree";
@@ -43,6 +43,15 @@ export default function Home() {
     const [NER_WC, SetNER_WC] = useState(null);
     const [TM_WC, SetTM_WC] = useState(null);
     const [ALLNEWS, SetALLNEWS] = useState(null);
+
+    /* categories */
+    const [footBallNews, setFootBallNews] = useState(null);
+    const [worldNews, setWorldNews] = useState(null);
+    const [entertainmentNews, setEntertainmentNews] = useState(null);
+    const [sportsNews, setSportsNews] = useState(null);
+    const [cricketNews, setCricketNews] = useState(null);
+    const [businessNews, setBusinessNews] = useState(null);
+    const [southAsiaNews, setSouthAsiaNews] = useState(null);
 
     function RENDER(ID, PAYLOAD) {
         if (ID === "COUNTS") {
@@ -91,6 +100,21 @@ export default function Home() {
         else if (ID === "ALLNEWS") {
             SetALLNEWS(dataPreProcess(PAYLOAD))
         }
+        else if (ID === "WORLD") {
+            setWorldNews(dataPreProcessV2(PAYLOAD))
+        } else if (ID === "SOUTHASIA") {
+            setSouthAsiaNews(dataPreProcessV2(PAYLOAD))
+        } else if (ID === "BUSINESS") {
+            setBusinessNews(dataPreProcessV2(PAYLOAD))
+        } else if (ID === "SPORTS") {
+            setSportsNews(dataPreProcessV2(PAYLOAD))
+        } else if (ID === "CRICKET") {
+            setCricketNews(dataPreProcessV2(PAYLOAD))
+        } else if (ID === "FOOTBALL") {
+            setFootBallNews(dataPreProcessV2(PAYLOAD))
+        } else if (ID === "ENTERTAINMENT") {
+            setEntertainmentNews(dataPreProcessV2(PAYLOAD))
+        }
 
     }
 
@@ -110,6 +134,21 @@ export default function Home() {
         }
         else if (ID === "ALLNEWS") {
             SetALLNEWS("\"Oops! Can't show the view right now. Try again later!\"");
+        }
+        else if (ID === "WORLD") {
+            setWorldNews("\"Oops! Can't show the view right now. Try again later!\"")
+        } else if (ID === "SOUTHASIA") {
+            setSouthAsiaNews("\"Oops! Can't show the view right now. Try again later!\"")
+        } else if (ID === "BUSINESS") {
+            setBusinessNews("\"Oops! Can't show the view right now. Try again later!\"")
+        } else if (ID === "SPORTS") {
+            setSportsNews("\"Oops! Can't show the view right now. Try again later!\"")
+        } else if (ID === "CRICKET") {
+            setCricketNews("\"Oops! Can't show the view right now. Try again later!\"")
+        } else if (ID === "FOOTBALL") {
+            setFootBallNews("\"Oops! Can't show the view right now. Try again later!\"")
+        } else if (ID === "ENTERTAINMENT") {
+            setEntertainmentNews("\"Oops! Can't show the view right now. Try again later!\"")
         }
     }
 
@@ -347,6 +386,82 @@ export default function Home() {
         }
     }
 
+    const [worldSkip, setWorldSkip] = useState(0);
+    const [southAsiaSkip, setSouthAsiaSkip] = useState(0);
+    const [businessSkip, setBusinessSkip] = useState(0);
+    const [sportsSkip, setSportsSkip] = useState(0);
+    const [cricketSkip, setCricketSkip] = useState(0);
+    const [footballSkip, setFootballSkip] = useState(0);
+    const [entertainmentSkip, setEntertainmentSkip] = useState(0);
+
+
+    const getNewsUpdates = (category, skip, retry) => {
+        const newSkip = skip += 10;
+        if (retry > 1) {
+            Toast.fire({
+                icon: "info",
+                title: "Oops! something went wrong"
+            });
+            return
+        }
+        Toast.fire({
+            icon: "info",
+            title: "Please Wait..."
+        });
+        const opts = {
+            url: NodeAPI + "/getDocuments",
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            data: {
+                database: "InsightFeed",
+                collection: "news",
+                filter: {
+                    "analyzed": true,
+                    "sentiment": { "$ne": null },
+                    "category": category
+                },
+                sort: { "timestamp": -1 },
+                limit: 10,
+                skip: newSkip
+            }
+        }
+        axios(opts)
+            .then(res => {
+                Toast.close();
+                const current = res.data;
+                if (category === "world") {
+                    setWorldSkip(prev => prev + 10)
+                    setWorldNews(prev => [...prev, ...current]);
+                } else if (category === "south-asia") {
+                    setSouthAsiaSkip(prev => prev + 10)
+                    setSouthAsiaNews(prev => [...prev, ...current])
+                } else if (category === "business-economy") {
+                    setBusinessSkip(prev => prev + 10)
+                    setBusinessNews(prev => [...prev, ...current])
+                } else if (category === "sports") {
+                    setSportsSkip(prev => prev + 10)
+                    setSportsNews(prev => [...prev, ...current])
+                } else if (category === "cricket") {
+                    setCricketSkip(prev => prev + 10)
+                    setCricketNews(prev => [...prev, ...current])
+                } else if (category === "football") {
+                    setFootballSkip(prev => prev + 10)
+                    setFootBallNews(prev => [...prev, ...current])
+                } else if (category === "entertainment") {
+                    setEntertainmentSkip(prev => prev + 10)
+                    setEntertainmentNews(prev => [...prev, ...current])
+                }
+            })
+            .catch(error => {
+                Toast.close();
+                retry++
+                getNewsUpdates(category, skip, retry)
+            })
+    }
+
+
     return (
         <div className="w3-content w3-panel">
 
@@ -468,7 +583,7 @@ export default function Home() {
 
             <>
                 {/* ALL News View  */}
-                {
+                {/* {
                     typeof ALLNEWS === "string" ?
                         (
                             <div className="w3-margin-top">
@@ -482,8 +597,204 @@ export default function Home() {
                             <ALLNewsView data={ALLNEWS} fromDate={fromDate} toDate={toDate} />
                             :
                             <Loader />
-                }
+                } */}
             </>
+
+            <div className="w3-row">
+                <div className="w3-padding w3-half">
+                    {
+                        typeof worldNews === "string" ?
+                            (
+                                <div className="w3-margin-top">
+                                    <p className="w3-text-red w3-large w3-padding-32 w3-center" style={{ fontWeight: "bold" }}>
+                                        <i className="w3-hover-text-black">{worldNews}</i>
+                                    </p>
+                                </div>
+                            )
+                            :
+                            worldNews ?
+                                <div className="w3-card">
+                                    <div className="scrollable-container">
+                                        {
+                                            worldNews.map(object => <OneNews key={object.id} object={object} />)
+                                        }
+                                        <div className="w3-padding w3-center">
+                                            <button className="w3-button w3-round-large w3-light-grey" onClick={() => { getNewsUpdates("world", worldSkip, 0) }}>Show More</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                :
+                                <Loader />
+                    }
+                </div>
+                <div className="w3-padding w3-half">
+                    {
+                        typeof southAsiaNews === "string" ?
+                            (
+                                <div className="w3-margin-top">
+                                    <p className="w3-text-red w3-large w3-padding-32 w3-center" style={{ fontWeight: "bold" }}>
+                                        <i className="w3-hover-text-black">{southAsiaNews}</i>
+                                    </p>
+                                </div>
+                            )
+                            :
+                            southAsiaNews ?
+                                <div className="w3-card">
+                                    <div className="scrollable-container">
+                                        {
+                                            southAsiaNews.map(object => <OneNews key={object.id} object={object} />)
+                                        }
+                                        <div className="w3-padding w3-center">
+                                            <button className="w3-button w3-round-large w3-light-grey" onClick={() => { getNewsUpdates("south-asia", southAsiaSkip, 0) }}>Show More</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                :
+                                <Loader />
+                    }
+                </div>
+            </div>
+
+            <div className="w3-row">
+                <div className="w3-padding w3-half">
+                    {
+                        typeof businessNews === "string" ?
+                            (
+                                <div className="w3-margin-top">
+                                    <p className="w3-text-red w3-large w3-padding-32 w3-center" style={{ fontWeight: "bold" }}>
+                                        <i className="w3-hover-text-black">{businessNews}</i>
+                                    </p>
+                                </div>
+                            )
+                            :
+                            businessNews ?
+                                <div className="w3-card">
+                                    <div className="scrollable-container">
+                                        {
+                                            businessNews.map(object => <OneNews key={object.id} object={object} />)
+                                        }
+                                        <div className="w3-padding w3-center">
+                                            <button className="w3-button w3-round-large w3-light-grey" onClick={() => { getNewsUpdates("business-economy", businessSkip, 0) }}>Show More</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                :
+                                <Loader />
+                    }
+                </div>
+                <div className="w3-padding w3-half">
+                    {
+                        typeof sportsNews === "string" ?
+                            (
+                                <div className="w3-margin-top">
+                                    <p className="w3-text-red w3-large w3-padding-32 w3-center" style={{ fontWeight: "bold" }}>
+                                        <i className="w3-hover-text-black">{sportsNews}</i>
+                                    </p>
+                                </div>
+                            )
+                            :
+                            sportsNews ?
+                                <div className="w3-card">
+                                    <div className="scrollable-container">
+                                        {
+                                            sportsNews.map(object => <OneNews key={object.id} object={object} />)
+                                        }
+                                        <div className="w3-padding w3-center">
+                                            <button className="w3-button w3-round-large w3-light-grey" onClick={() => { getNewsUpdates("sports", sportsSkip, 0) }}>Show More</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                :
+                                <Loader />
+                    }
+                </div>
+            </div>
+
+            <div className="w3-row">
+                <div className="w3-padding w3-half">
+                    {
+                        typeof cricketNews === "string" ?
+                            (
+                                <div className="w3-margin-top">
+                                    <p className="w3-text-red w3-large w3-padding-32 w3-center" style={{ fontWeight: "bold" }}>
+                                        <i className="w3-hover-text-black">{cricketNews}</i>
+                                    </p>
+                                </div>
+                            )
+                            :
+                            cricketNews ?
+                                <div className="w3-card">
+                                    <div className="scrollable-container">
+                                        {
+                                            cricketNews.map(object => <OneNews key={object.id} object={object} />)
+                                        }
+                                        <div className="w3-padding w3-center">
+                                            <button className="w3-button w3-round-large w3-light-grey" onClick={() => { getNewsUpdates("cricket", cricketSkip, 0) }}>Show More</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                :
+                                <Loader />
+                    }
+                </div>
+                <div className="w3-padding w3-half">
+                    {
+                        typeof footBallNews === "string" ?
+                            (
+                                <div className="w3-margin-top">
+                                    <p className="w3-text-red w3-large w3-padding-32 w3-center" style={{ fontWeight: "bold" }}>
+                                        <i className="w3-hover-text-black">{footBallNews}</i>
+                                    </p>
+                                </div>
+                            )
+                            :
+                            footBallNews ?
+                                <div className="w3-card">
+                                    <div className="scrollable-container">
+                                        {
+                                            footBallNews.map(object => <OneNews key={object.id} object={object} />)
+                                        }
+                                        <div className="w3-padding w3-center">
+                                            <button className="w3-button w3-round-large w3-light-grey" onClick={() => { getNewsUpdates("football", footballSkip, 0) }}>Show More</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                :
+                                <Loader />
+                    }
+                </div>
+            </div>
+
+            <div className="w3-row">
+                <div className="w3-padding w3-half">
+                    {
+                        typeof entertainmentNews === "string" ?
+                            (
+                                <div className="w3-margin-top">
+                                    <p className="w3-text-red w3-large w3-padding-32 w3-center" style={{ fontWeight: "bold" }}>
+                                        <i className="w3-hover-text-black">{entertainmentNews}</i>
+                                    </p>
+                                </div>
+                            )
+                            :
+                            entertainmentNews ?
+                                <div className="w3-card">
+                                    <div className="scrollable-container">
+                                        {
+                                            entertainmentNews.map(object => <OneNews key={object.id} object={object} />)
+                                        }
+                                        <div className="w3-padding w3-center">
+                                            <button className="w3-button w3-round-large w3-light-grey" onClick={() => { getNewsUpdates("entertainment", entertainmentSkip, 0) }}>Show More</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                :
+                                <Loader />
+                    }
+                </div>
+                <div className="w3-padding w3-half">
+                </div>
+            </div>
 
             {/* Word Cloud - Named Entity Recognition  */}
             {

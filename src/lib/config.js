@@ -20,6 +20,17 @@ exports.dataPreProcess = (rawData) => {
     return processedData
 }
 
+exports.dataPreProcessV2 = (data) => {
+    const processedData = []
+    for (const dt of data) {
+        let { named_entities, topic_modeling } = dt;
+        dt['named_entities'] = typeof named_entities === "string" ? named_entities.includes(",") ? named_entities.split(",") : [named_entities] : Array.isArray(named_entities) ? named_entities : Object.keys(named_entities);
+        dt['topic_modeling'] = typeof topic_modeling === "string" ? topic_modeling.includes(",") ? topic_modeling.split(",") : [topic_modeling] : Array.isArray(topic_modeling) ? topic_modeling : Object.keys(topic_modeling);
+        processedData.push(dt);
+    }
+    return processedData
+}
+
 exports.getAxiosOptions = (dateFrom, dateTo) => {
     return [
         {
@@ -123,6 +134,146 @@ exports.getAxiosOptions = (dateFrom, dateTo) => {
                     "topic_modeling": 1
                 },
                 sort: { "timestamp": -1 },
+            }
+        },
+        {
+            type: "NEWS",
+            url: exports.NodeAPI + "/getDocuments",
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            data: {
+                id: "WORLD",
+                database: "InsightFeed",
+                collection: "news",
+                filter: {
+                    "analyzed": true,
+                    "sentiment": { "$ne": null },
+                    "category": "world"
+                },
+                sort: { "timestamp": -1 },
+                limit: 10
+            }
+        },
+        {
+            type: "NEWS",
+            url: exports.NodeAPI + "/getDocuments",
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            data: {
+                id: "SOUTHASIA",
+                database: "InsightFeed",
+                collection: "news",
+                filter: {
+                    "analyzed": true,
+                    "sentiment": { "$ne": null },
+                    "category": "south-asia"
+                },
+                sort: { "timestamp": -1 },
+                limit: 10
+            }
+        },
+        {
+            type: "NEWS",
+            url: exports.NodeAPI + "/getDocuments",
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            data: {
+                id: "BUSINESS",
+                database: "InsightFeed",
+                collection: "news",
+                filter: {
+                    "analyzed": true,
+                    "sentiment": { "$ne": null },
+                    "category": "business-economy"
+                },
+                sort: { "timestamp": -1 },
+                limit: 10
+            }
+        },
+        {
+            type: "NEWS",
+            url: exports.NodeAPI + "/getDocuments",
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            data: {
+                id: "SPORTS",
+                database: "InsightFeed",
+                collection: "news",
+                filter: {
+                    "analyzed": true,
+                    "sentiment": { "$ne": null },
+                    "category": "sports"
+                },
+                sort: { "timestamp": -1 },
+                limit: 10
+            }
+        },
+        {
+            type: "NEWS",
+            url: exports.NodeAPI + "/getDocuments",
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            data: {
+                id: "CRICKET",
+                database: "InsightFeed",
+                collection: "news",
+                filter: {
+                    "analyzed": true,
+                    "sentiment": { "$ne": null },
+                    "category": "cricket"
+                },
+                sort: { "timestamp": -1 },
+                limit: 10
+            }
+        },
+        {
+            type: "NEWS",
+            url: exports.NodeAPI + "/getDocuments",
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            data: {
+                id: "FOOTBALL",
+                database: "InsightFeed",
+                collection: "news",
+                filter: {
+                    "analyzed": true,
+                    "sentiment": { "$ne": null },
+                    "category": "football"
+                },
+                sort: { "timestamp": -1 },
+                limit: 10
+            }
+        },
+        {
+            type: "NEWS",
+            url: exports.NodeAPI + "/getDocuments",
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            data: {
+                id: "ENTERTAINMENT",
+                database: "InsightFeed",
+                collection: "news",
+                filter: {
+                    "analyzed": true,
+                    "sentiment": { "$ne": null },
+                    "category": "entertainment"
+                },
+                sort: { "timestamp": -1 },
+                limit: 10
             }
         }
     ]
