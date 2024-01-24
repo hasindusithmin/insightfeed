@@ -150,7 +150,8 @@ exports.getAxiosOptions = (dateFrom, dateTo) => {
                 filter: {
                     "analyzed": true,
                     "sentiment": { "$ne": null },
-                    "category": "world"
+                    "category": "world",
+                    "timestamp": { "$lte": dateTo }
                 },
                 sort: { "timestamp": -1 },
                 limit: 10
@@ -170,7 +171,8 @@ exports.getAxiosOptions = (dateFrom, dateTo) => {
                 filter: {
                     "analyzed": true,
                     "sentiment": { "$ne": null },
-                    "category": "south-asia"
+                    "category": "south-asia",
+                    "timestamp": { "$lte": dateTo }
                 },
                 sort: { "timestamp": -1 },
                 limit: 10
@@ -190,7 +192,8 @@ exports.getAxiosOptions = (dateFrom, dateTo) => {
                 filter: {
                     "analyzed": true,
                     "sentiment": { "$ne": null },
-                    "category": "business-economy"
+                    "category": "business-economy",
+                    "timestamp": { "$lte": dateTo }
                 },
                 sort: { "timestamp": -1 },
                 limit: 10
@@ -210,7 +213,8 @@ exports.getAxiosOptions = (dateFrom, dateTo) => {
                 filter: {
                     "analyzed": true,
                     "sentiment": { "$ne": null },
-                    "category": "sports"
+                    "category": "sports",
+                    "timestamp": { "$lte": dateTo }
                 },
                 sort: { "timestamp": -1 },
                 limit: 10
@@ -230,7 +234,8 @@ exports.getAxiosOptions = (dateFrom, dateTo) => {
                 filter: {
                     "analyzed": true,
                     "sentiment": { "$ne": null },
-                    "category": "cricket"
+                    "category": "cricket",
+                    "timestamp": { "$lte": dateTo }
                 },
                 sort: { "timestamp": -1 },
                 limit: 10
@@ -250,7 +255,8 @@ exports.getAxiosOptions = (dateFrom, dateTo) => {
                 filter: {
                     "analyzed": true,
                     "sentiment": { "$ne": null },
-                    "category": "football"
+                    "category": "football",
+                    "timestamp": { "$lte": dateTo }
                 },
                 sort: { "timestamp": -1 },
                 limit: 10
@@ -270,7 +276,8 @@ exports.getAxiosOptions = (dateFrom, dateTo) => {
                 filter: {
                     "analyzed": true,
                     "sentiment": { "$ne": null },
-                    "category": "entertainment"
+                    "category": "entertainment",
+                    "timestamp": { "$lte": dateTo }
                 },
                 sort: { "timestamp": -1 },
                 limit: 10

@@ -420,7 +420,8 @@ export default function Home() {
                 filter: {
                     "analyzed": true,
                     "sentiment": { "$ne": null },
-                    "category": category
+                    "category": category,
+                    "timestamp": { "$lte": toDate }
                 },
                 sort: { "timestamp": -1 },
                 limit: 10,
